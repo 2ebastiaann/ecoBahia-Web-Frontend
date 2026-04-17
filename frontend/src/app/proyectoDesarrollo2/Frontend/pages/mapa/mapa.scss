@@ -1,874 +1,407 @@
-// Variables de colores
+// ========================================
+// VARIABLES
+// ========================================
 $green-primary: #10b981;
-$green-secondary: #059669;
+$green-dark: #059669;
+$green-light: #d1fae5;
 $emerald: #34d399;
 
-// Colores oscuros
-$dark-bg: #0f172a;
-$dark-card: #1e293b;
-$dark-card-hover: #334155;
-$dark-text: #e2e8f0;
-$dark-text-muted: #94a3b8;
+// Light theme colors
+$bg-main: #f0fdf4;
+$bg-white: #ffffff;
+$text-primary: #1f2937;
+$text-secondary: #6b7280;
+$text-muted: #9ca3af;
+$border-light: #94a3b8; // Más oscuros y notorios (slate-400)
 
-// Tipografía consistente
-$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
-
-// Animaciones
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    left: -100%;
-  }
-  50%, 100% {
-    left: 100%;
-  }
-}
-
-@keyframes routePointPulse {
-  0% {
-    r: 8px;
-    filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.4));
-  }
-  50% {
-    r: 10px;
-    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8));
-  }
-  100% {
-    r: 8px;
-    filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.4));
-  }
-}
-
-@keyframes routePointGlow {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.8;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 // ========================================
-// MAP PAGE LAYOUT
+// LAYOUT GENERAL
 // ========================================
-
 .map-page-container {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-  font-family: $font-family;
+  height: 100%; 
+  min-height: calc(100vh - 80px);
+  background: $bg-main;
+  padding: 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  animation: fadeInUp 0.4s ease-out;
+  box-sizing: border-box;
+
+  * {
+    box-sizing: border-box;
+  }
 }
 
-// Header bar with buttons
-.map-header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 2rem;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(51, 65, 85, 0.98) 100%);
-  backdrop-filter: blur(10px);
-  border-bottom: 2px solid rgba(16, 185, 129, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  flex-shrink: 0;
+// MULTI-PANEL GRID
+// Separa el mapa y la lista lateral en dos rectángulos independientes
+.map-panels-grid {
+  display: grid;
+  grid-template-columns: 1fr 350px;
   gap: 1.5rem;
-  animation: slideDown 0.5s ease-out;
-  position: relative;
+  flex: 1;
+  height: 100%;
+}
 
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, 
-                  transparent 0%, 
-                  rgba(16, 185, 129, 0.4) 50%, 
-                  transparent 100%);
-  }
+// ESTILO BASE PARA LOS DOS PANELES SEPARADOS
+.panel-card {
+  background: $bg-white;
+  border-radius: 12px;
+  border: 2px solid $border-light; // Bordes más notorios
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// HEADER COMPARTIDO PARA QUE SE ALINEEN PERFECTO
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: $bg-white;
+  border-bottom: 2px solid $border-light;
+  min-height: 70px; // Fija la misma altura para ambos headers
 
   h2 {
+    color: #334155; // Azul oscuro opaco
+    font-size: 1.15rem;
+    font-weight: 700;
     margin: 0;
-    font-size: 1.875rem;
-    color: $dark-text;
-    font-weight: 800;
-    font-family: $font-family;
-    letter-spacing: -0.025em;
-    background: linear-gradient(135deg, $emerald 0%, $green-primary 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 }
 
-.header-left,
+// REGLAS ESPECÍFICAS DE CABECERA DE MAPA
+.header-left, .header-right {
+  min-width: 100px;
+}
 .header-right {
   display: flex;
-  gap: 0.875rem;
-  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
-
 .header-center {
   flex: 1;
   text-align: center;
 }
 
-.header-left {
-  min-width: 120px;
-}
+// REGLAS ESPECÍFICAS DE CABECERA DE RUTAS
+.routes-header {
+  h2 {
+    font-size: 1.1rem; // Ajuste visual si es necesario, pero alineado
+    color: $text-secondary;
+  }
 
-.header-right {
-  min-width: 220px;
-  justify-content: flex-end;
-}
+  .btn-create {
+    background: $green-primary;
+    color: #fff;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+    transition: all 0.2s ease;
 
-// Buttons
-.btn {
-  padding: 0.75rem 1.25rem;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  font-family: $font-family;
-  letter-spacing: 0.01em;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
-  &:active {
-    transform: translateY(1px);
+    &:hover {
+      background: $green-dark;
+    }
   }
 }
 
-.btn-back {
-  background: rgba(30, 41, 59, 0.8);
-  color: $emerald;
-  border: 2px solid rgba(16, 185, 129, 0.3);
 
-  &:hover {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.5);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
-  }
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: white;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-
-  &:hover {
-    background: linear-gradient(135deg, #1d4ed8, #1e40af);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
-  }
-}
-
-.btn-success {
-  background: linear-gradient(135deg, $green-primary, $emerald);
-  color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-
-  &:hover {
-    background: linear-gradient(135deg, $green-secondary, $green-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-  }
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  color: white;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-
-  &:hover {
-    background: linear-gradient(135deg, #b91c1c, #991b1b);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
-  }
-}
-
-.btn-cancel {
-  background: rgba(30, 41, 59, 0.8);
-  color: $emerald;
-  border: 2px solid rgba(16, 185, 129, 0.3);
-
-  &:hover {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.5);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.2);
-  }
-}
-
-// Content wrapper: Map + Sidebar
-.map-content-wrapper {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 0;
+// CUERPO DE LOS PANELES
+.panel-body {
   flex: 1;
-  min-height: 0;
+  position: relative;
   overflow: hidden;
 }
 
-// Map section
-.map-section {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border-right: 2px solid rgba(16, 185, 129, 0.2);
-
+// MAPA
+.map-body {
   #mapContainer {
     width: 100%;
     height: 100%;
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 1;
   }
-}
 
-// Routes sidebar - MEJORADO
-.routes-sidebar {
-  display: flex;
-  flex-direction: column;
-  width: 360px;
-  height: 100%;
-  background: linear-gradient(135deg, #1e293b 0%, #2d3b4e 100%);
-  padding: 1.5rem;
-  overflow: hidden;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
-  border-left: 1px solid rgba(16, 185, 129, 0.25);
-  position: relative;
-
-  &::before {
-    content: '';
+  .btn-map-mode {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 2px;
-    height: 100%;
-    background: linear-gradient(180deg, 
-      transparent 0%,
-      rgba(16, 185, 129, 0.3) 50%,
-      transparent 100%
-    );
-  }
-
-  h3 {
-    margin: 0 0 1.5rem 0;
-    font-size: 1.25rem;
-    color: $dark-text;
-    font-weight: 700;
-    font-family: $font-family;
-    letter-spacing: -0.01em;
-    background: linear-gradient(135deg, $emerald 0%, $green-primary 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid rgba(16, 185, 129, 0.15);
-  }
-}
-
-.routes-list-container {
-  flex: 1;
-  max-height: calc(100vh - 180px);
-  overflow-y: scroll;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-  padding: 0 0.5rem 0 0.25rem;
-  padding-right: 0.75rem;
-
-  &::-webkit-scrollbar {
-    width: 10px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.8);
-    border-radius: 10px;
-    margin: 4px 0;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(16, 185, 129, 0.5), rgba(16, 185, 129, 0.7));
-    border-radius: 10px;
-    border: 2px solid rgba(15, 23, 42, 0.8);
+    top: 15px;
+    right: 15px;
+    z-index: 1000; // Must be over leaflet
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
 
     &:hover {
-      background: linear-gradient(180deg, rgba(16, 185, 129, 0.7), rgba(16, 185, 129, 0.9));
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
-    }
-
-    &:active {
-      background: linear-gradient(180deg, rgba(16, 185, 129, 0.8), rgba(16, 185, 129, 1));
+      background: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
     }
   }
-
-  // Para Firefox
-  scrollbar-width: thin;
-  scrollbar-color: rgba(16, 185, 129, 0.6) rgba(15, 23, 42, 0.8);
 }
 
-// Item de ruta - MEJORADO Y CENTRADO
+// LISTA DE RUTAS
+.routes-list-container {
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  &::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+}
+
+// ITEM DE LA LISTA
 .ruta-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.875rem 1rem;
-  background: rgba(15, 23, 42, 0.6);
-  border: 2px solid rgba(16, 185, 129, 0.2);
-  border-radius: 14px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: $bg-white;
+  border: 1px solid #cbd5e1; // Bordes más notorios en la lista
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
   gap: 1rem;
-  min-width: 0;
   position: relative;
   overflow: hidden;
-  margin: 0 0.25rem; // Separación de los bordes
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 3px;
-    height: 100%;
-    background: linear-gradient(180deg, $green-primary 0%, $emerald 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
+  transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(16, 185, 129, 0.12);
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.2);
-    transform: translateX(-4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+    border-color: #94a3b8;
+  }
 
-    &::before {
-      opacity: 1;
-    }
+  // La rayita de color a la izquierda
+  .ruta-color-line {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px; // El grosor de la rayita
   }
 
   .ruta-info {
+    flex: 1;
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
+    flex-direction: column;
+    padding-left: 0.5rem; // Espacio respecto a la rayita
+
+    .ruta-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 0.25rem;
+    }
+
+    .ruta-points {
+      font-size: 0.8rem;
+      color: $text-muted;
+    }
   }
 
-  .ruta-color {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
-                inset 0 1px 2px rgba(255, 255, 255, 0.2);
-  }
+  .ruta-actions {
+    .btn-view {
+      background: $green-primary;
+      color: white;
+      border: none;
+      padding: 0.35rem 1rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
 
-  .ruta-points {
-    font-size: 0.78rem;
-    color: $dark-text-muted;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(16,185,129,0.06);
-    padding: 0.18rem 0.45rem;
-    border-radius: 999px;
-    margin-left: 0.25rem;
-    flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    max-width: 88px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .ruta-name {
-    font-size: 0.95rem;
-    color: $dark-text;
-    font-weight: 500;
-    font-family: $font-family;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    min-width: 0;
-  }
-}
-
-.btn-view {
-  padding: 0.5rem 1.125rem;
-  background: linear-gradient(135deg, $green-primary, $emerald);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: $font-family;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-  margin-right: 0.25rem; // Separación del borde derecho
-
-  &:hover {
-    background: linear-gradient(135deg, $green-secondary, $green-primary);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-  }
-
-  &:active {
-    transform: scale(0.98);
-  }
-}
-
-.ruta-actions {
-  display: flex;
-  gap: 0.375rem;
-  flex-shrink: 0;
-}
-
-.btn-delete {
-  padding: 0.5rem 0.75rem;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: $font-family;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-
-  &:hover {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    transform: scale(1.08);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-  }
-
-  &:active {
-    transform: scale(0.96);
+      &:hover {
+        background: $green-dark;
+      }
+    }
   }
 }
 
 .no-routes {
-  padding: 3rem 1.5rem;
   text-align: center;
-  color: $dark-text-muted;
-  font-size: 1rem;
-  font-family: $font-family;
-  font-weight: 400;
-  line-height: 1.6;
-  letter-spacing: 0.01em;
+  color: $text-muted;
+  font-size: 0.95rem;
+  padding: 2rem 0;
 }
 
-// Modal - MEJORADO
+// Botones generales compartidos con otros modulos
+.btn-secondary {
+  background: $bg-main;
+  color: $text-secondary;
+  border: 1px solid $border-light;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+
+  &:hover {
+    background: rgba(16, 185, 129, 0.05);
+    color: $green-dark;
+    border-color: rgba(16, 185, 129, 0.2);
+  }
+}
+
+.btn-primary {
+  background: $green-primary;
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+
+  &:hover {
+    background: $green-dark;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  
+  &:hover {
+    background: #dc2626;
+  }
+}
+
+
+// ====================================
+// MODAL STYLES
+// ====================================
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(15, 23, 42, 0.85);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(31, 41, 55, 0.6);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 10001;
-  backdrop-filter: blur(12px);
-  animation: fadeIn 0.3s ease;
+  align-items: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
   padding: 1rem;
 }
 
 .modal {
-  background: linear-gradient(135deg, #1e293b 0%, #2d3b4e 100%);
+  background: $bg-white;
+  border-radius: 1.5rem;
   padding: 2.5rem;
-  border-radius: 24px;
   width: 100%;
-  max-width: 520px;
-  z-index: 10002;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
-              0 0 0 1px rgba(16, 185, 129, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  position: relative;
-  overflow: hidden;
+  max-width: 450px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, 
-      transparent, 
-      rgba(16, 185, 129, 0.6), 
-      transparent
-    );
-    animation: shimmer 3s infinite;
-  }
-
-  h3 {
-    margin: 0 0 2rem 0;
-    font-size: 1.75rem;
-    color: $dark-text;
+  h2 {
+    color: $text-primary;
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
     font-weight: 700;
-    font-family: $font-family;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, $emerald 0%, $green-primary 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
     position: relative;
     padding-bottom: 1rem;
 
     &::after {
       content: '';
       position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 60px;
-      height: 3px;
-      background: linear-gradient(90deg, $green-primary 0%, transparent 100%);
+      bottom: 0; left: 0;
+      width: 40px; height: 3px;
+      background: $green-primary;
       border-radius: 2px;
     }
   }
-}
-
-.modal-form {
-  margin-bottom: 2rem;
 
   .form-group {
-    margin-bottom: 1.5rem;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
     label {
       display: block;
-      font-size: 0.9rem;
+      color: $text-secondary;
       font-weight: 600;
-      color: $emerald;
-      margin-bottom: 0.625rem;
-      font-family: $font-family;
-      letter-spacing: 0.3px;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
       text-transform: uppercase;
     }
-  }
-}
 
-.form-input {
-  width: 100%;
-  padding: 0.875rem 1rem;
-  background: rgba(15, 23, 42, 0.7);
-  border: 2px solid rgba(16, 185, 129, 0.25);
-  border-radius: 14px;
-  font-size: 1rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: $dark-text;
-  font-weight: 400;
-  font-family: $font-family;
-  letter-spacing: 0.01em;
-  box-sizing: border-box;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-
-  &:focus {
-    outline: none;
-    border-color: rgba(16, 185, 129, 0.6);
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15),
-                inset 0 2px 4px rgba(0, 0, 0, 0.2);
-    background: rgba(15, 23, 42, 0.9);
-    transform: translateY(-1px);
-  }
-
-  &::placeholder {
-    color: $dark-text-muted;
-    font-weight: 400;
-  }
-
-  &:hover:not(:focus) {
-    border-color: rgba(16, 185, 129, 0.35);
-  }
-}
-
-.color-picker-group {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: 14px;
-  border: 2px solid rgba(16, 185, 129, 0.2);
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: rgba(16, 185, 129, 0.35);
-    background: rgba(15, 23, 42, 0.7);
-  }
-}
-
-.color-picker {
-  width: 60px;
-  height: 48px;
-  border: 2px solid rgba(16, 185, 129, 0.3);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: scale(1.05);
-    border-color: rgba(16, 185, 129, 0.5);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-  }
-
-  &::-webkit-color-swatch-wrapper {
-    padding: 3px;
-  }
-
-  &::-webkit-color-swatch {
-    border-radius: 8px;
-    border: none;
-  }
-}
-
-.color-preview {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
-              inset 0 1px 2px rgba(255, 255, 255, 0.2);
-}
-
-.color-info {
-  flex: 1;
-  display: flex;
-  align-items: center;
-
-  .color-value {
-    font-size: 0.95rem;
-    color: $dark-text;
-    font-weight: 600;
-    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(16, 185, 129, 0.15);
-
-  button {
-    padding: 0.875rem 1.75rem;
-    border: none;
-    border-radius: 14px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.95rem;
-    font-family: $font-family;
-    letter-spacing: 0.02em;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:active {
-      transform: translateY(1px);
-    }
-  }
-}
-
-// Responsive
-@media (max-width: 1200px) {
-  .map-content-wrapper {
-    grid-template-columns: 1fr 300px;
-  }
-
-  .routes-sidebar {
-    width: 300px;
-    padding: 1.25rem;
-  }
-}
-
-@media (max-width: 1024px) {
-  .map-content-wrapper {
-    grid-template-columns: 1fr;
-  }
-
-  .routes-sidebar {
-    width: 100%;
-    max-height: 320px;
-    border-left: none;
-    border-top: 2px solid rgba(16, 185, 129, 0.2);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
-
-    &::before {
+    input {
       width: 100%;
-      height: 2px;
-      background: linear-gradient(90deg, 
-        transparent 0%,
-        rgba(16, 185, 129, 0.3) 50%,
-        transparent 100%
-      );
+      padding: 0.75rem 1rem;
+      background: $bg-main;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 0.75rem;
+      font-size: 0.95rem;
+      color: $text-primary;
+      margin-bottom: 1.5rem;
+
+      &:focus {
+        outline: none;
+        border-color: $green-primary;
+        background: $bg-white;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+      }
     }
+  }
+
+  .modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
   }
 }
 
-@media (max-width: 768px) {
-  .map-header-bar {
+// Media queries
+@media (max-width: 900px) {
+  .map-panels-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 400px;
+  }
+  
+  .panel-header {
     flex-direction: column;
     gap: 1rem;
-    padding: 1rem 1.25rem;
-
-    h2 {
-      font-size: 1.5rem;
+    min-height: auto;
+    
+    .header-left, .header-right {
+      width: 100%;
+      justify-content: center;
     }
   }
-
-  .header-left,
-  .header-right,
-  .header-center {
-    width: 100%;
-    min-width: auto;
-  }
-
-  .header-right {
-    justify-content: center;
-  }
-
-  .btn {
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
-  }
-
-  .modal {
-    padding: 2rem 1.5rem;
-    border-radius: 20px;
-
-    h3 {
-      font-size: 1.5rem;
-    }
-  }
-
-  .color-picker-group {
-    flex-wrap: wrap;
-  }
-
-  .routes-sidebar {
-    padding: 1rem;
-
-    h3 {
-      font-size: 1.125rem;
-    }
-  }
-}
-
-// ========================================
-// ROUTE POINT STYLES (Puntos en el mapa)
-// ========================================
-
-.route-point {
-  animation: routePointPulse 2s ease-in-out infinite;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-  
-  circle {
-    animation: routePointGlow 2s ease-in-out infinite;
-  }
-}
-
-.route-pin-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  transform: translateY(-6px);
-  font-size: 20px;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.6);
-  animation: routePointPulse 2s ease-in-out infinite;
-}
-
-.route-pin {
-  display: inline-block;
-  line-height: 1;
-  transform: translateY(-2px);
-  filter: drop-shadow(0 4px 10px rgba(16,185,129,0.35));
-}
-
-// SVG-specific styling for the new pin
-.route-pin-svg .route-pin-svg-el {
-  width: 100%;
-  height: 100%;
-  display: block;
-  transform-origin: 50% 40%;
-}
-
-@keyframes pinPulse {
-  0% {
-    transform: scale(1);
-    filter: drop-shadow(0 2px 6px rgba(16,185,129,0.28));
-  }
-  50% {
-    transform: scale(1.08);
-    filter: drop-shadow(0 6px 18px rgba(16,185,129,0.55));
-  }
-  100% {
-    transform: scale(1);
-    filter: drop-shadow(0 2px 6px rgba(16,185,129,0.28));
-  }
-}
-
-.route-pin-icon.route-pin-svg .route-pin-svg-el {
-  animation: pinPulse 2.4s ease-in-out infinite;
 }

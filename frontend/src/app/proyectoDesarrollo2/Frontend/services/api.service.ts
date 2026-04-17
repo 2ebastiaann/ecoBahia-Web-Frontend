@@ -22,7 +22,7 @@ export interface CrearRutaPayload {
 })
 export class ApiService {
 
-  private baseUrl = environment.PROF_API_BASE_URL;
+  private baseUrl = environment.API_BASE_URL;
   private _perfilId = environment.PERFIL_ID;
 
   // Getter
@@ -57,6 +57,28 @@ export class ApiService {
   }
 
   // ======================================================
+  // 👥 CONDUCTORES (USUARIOS)
+  // ======================================================
+
+  getConductores(): Observable<any> {
+    return this.http.get<any[]>(`${this.baseUrl}/usuarios/conductores`);
+  }
+
+  crearConductor(conductor: any): Observable<any> {
+    // Para crear un conductor se llama al endpoint de registro con id_rol = 2
+    const body = { ...conductor, id_rol: 2 };
+    return this.http.post(`${this.baseUrl}/usuarios/register`, body);
+  }
+
+  actualizarConductor(id: string, conductor: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/usuarios/conductores/${id}`, conductor);
+  }
+
+  eliminarConductor(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/usuarios/conductores/${id}`);
+  }
+
+  // ======================================================
   // 📍 RUTAS
   // ======================================================
 
@@ -66,19 +88,47 @@ export class ApiService {
   }
 
   crearRuta(payload: CrearRutaPayload): Observable<any> {
-    // El backend del profe podría esperar shape como string, no como objeto
     const body = {
       perfil_id: payload.perfil_id,
       nombre_ruta: payload.nombre_ruta,
       color_hex: payload.color_hex,
-      shape: JSON.stringify(payload.shape)  // Asegurar que es string
+      shape: JSON.stringify(payload.shape)
     };
-
     return this.http.post<any>(`${this.baseUrl}/rutas`, body);
   }
 
   eliminarRuta(id: string): Observable<any> {
     const params = new HttpParams().set('perfil_id', this._perfilId);
     return this.http.delete(`${this.baseUrl}/rutas/${id}`, { params });
+  }
+
+  // ======================================================
+  // 🔗 ASIGNACIONES
+  // ======================================================
+
+  // Conductores - Vehiculos
+  getAsignacionesConductores(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/asignaciones/conductores`);
+  }
+
+  asignarConductor(body: { usuario_id: string, vehiculo_id: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/asignaciones/conductores`, body);
+  }
+
+  desasignarConductor(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/asignaciones/conductores/${id}`);
+  }
+
+  // Rutas - Vehiculos
+  getAsignacionesRutas(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/asignaciones/rutas`);
+  }
+
+  asignarRuta(body: { vehiculo_id: string, ruta_id: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/asignaciones/rutas`, body);
+  }
+
+  desasignarRuta(id: string): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/asignaciones/rutas/${id}`);
   }
 }

@@ -30,6 +30,12 @@ export class Login {
     this.authService.login(this.email, this.password).subscribe({
       next: res => {
         if (res.ok) {
+          // Validar que el usuario sea administrador (rol 1)
+          if (res.usuario.id_rol !== 1) {
+            this.notificationService.error('Acceso denegado. Solo administradores pueden ingresar.');
+            return;
+          }
+
           this.authService.guardarToken(res.token);
           this.authService.guardarUsuario(res.usuario);
           this.router.navigate(['/main']);
@@ -45,10 +51,6 @@ export class Login {
 
   handleGoogleLogin(): void {
     this.notificationService.info('Google Sign-In en desarrollo');
-  }
-
-  handleRegister(): void {
-    this.router.navigate(['/registro']);
   }
 
   handleKeyPress(event: KeyboardEvent): void {

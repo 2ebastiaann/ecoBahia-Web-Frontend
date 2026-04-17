@@ -17,23 +17,55 @@
       <!-- Header -->
       <app-header
         [sidebarOpen]="sidebarOpen"
-        [title]="'Bienvenido a EcoBahía'"
         (toggle)="toggleSidebar()"
         (logout)="onLogout()">
       </app-header>
 
-      <!-- Dynamic content -->
+      <!-- Dynamic content (vehiculos, mapa, etc.) -->
       <router-outlet></router-outlet>
 
-      <!-- SOLO mostrar este mapa si estamos en /main -->
-      <div class="map-card" *ngIf="currentRoute === '/main'">
-        <div class="map-header">
-          <h3><i class="icon-map">🗺️</i> Mapa completo de Buenaventura</h3>
+      <!-- SOLO mostrar dashboard si estamos en /main -->
+      <div class="dashboard-home" *ngIf="currentRoute === '/main'">
+
+        <!-- Info cards row -->
+        <div class="info-cards-row">
+          <!-- Rutas activas -->
+          <div class="info-card">
+            <div class="info-card-header">
+              <h3>Rutas activas</h3>
+            </div>
+            <div class="info-card-body">
+              <p class="info-placeholder">Sin rutas activas en este momento</p>
+            </div>
+            <div class="info-card-footer">
+              <button class="link-btn" (click)="verRutaActiva()">Ver más...</button>
+            </div>
+          </div>
+
+          <!-- Progreso de rutas -->
+          <div class="info-card">
+            <div class="info-card-header">
+              <h3>Progreso de rutas</h3>
+            </div>
+            <div class="info-card-body">
+              <p class="info-placeholder">No hay recorridos en progreso</p>
+            </div>
+            <div class="info-card-footer">
+              <button class="link-btn" (click)="verRutaActiva()">Ver más...</button>
+            </div>
+          </div>
         </div>
 
-        <div class="map-wrapper">
-          <div id="mainMapPreview"></div>
+        <!-- Mapa -->
+        <div class="map-card">
+          <div class="map-wrapper">
+            <button class="btn-map-mode" (click)="toggleMapMode()" title="Alternar Vista Satélite">
+              {{ isSatelliteMode ? '🗺️ Normal' : '🛰️ Satélite' }}
+            </button>
+            <div id="mainMapPreview"></div>
+          </div>
         </div>
+
       </div>
 
     </div>

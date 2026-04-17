@@ -1,5 +1,16 @@
 @import "leaflet/dist/leaflet.css";
 
+// Importar fuente Inter desde Google Fonts globalmente para empatar estilos del login
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
 html, body {
   height: 100%;
+  width: 100%;
+  background: #f0fdf4; // Fondo base unificado
 }

@@ -7,20 +7,6 @@ import { filter } from 'rxjs/operators';
 import { SidebarComponent } from '../../components/sidebar/sidebar';
 import { HeaderComponent } from '../../components/header/header';
 
-interface VehiculoActual {
-  conductor: string;
-  progreso: number;
-  placa: string;
-  estado: string;
-}
-
-interface Aviso {
-  id: number;
-  tipo: 'warning' | 'info' | 'success';
-  titulo: string;
-  tiempo: string;
-}
-
 @Component({
   selector: 'app-main',
   standalone: true,
@@ -40,22 +26,17 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   private mapInitInProgress = false;
   private mapInitTimeout?: any;
 
+  // Manejo de capas
+  private layerNormal!: L.TileLayer;
+  private layerSatellite!: L.TileLayer;
+  public isSatelliteMode = false;
+
   menuItems = [
-    { id: 'inicio', label: 'Inicio', icon: 'icon-home' },
-    { id: 'vehiculos', label: 'Vehículos', icon: 'icon-car' },
+    { id: 'inicio', label: 'Home', icon: 'icon-home' },
     { id: 'rutas', label: 'Rutas', icon: 'icon-route' },
-  ];
-
-  vehiculoActual: VehiculoActual = {
-    conductor: 'M. García',
-    progreso: 72,
-    placa: 'DEF-456',
-    estado: 'En ruta'
-  };
-
-  avisos: Aviso[] = [
-    { id: 1, tipo: 'warning', titulo: 'Retraso por lluvia en Zona Centro', tiempo: 'Hace 15 minutos' },
-    { id: 2, tipo: 'success', titulo: 'Ruta Este completada exitosamente', tiempo: 'Hace 1 hora' }
+    { id: 'registro-conductores', label: 'Conductores', icon: 'icon-user' },
+    { id: 'vehiculos', label: 'Vehículos', icon: 'icon-car' },
+    { id: 'asignaciones', label: 'Asignaciones', icon: 'icon-settings' }
   ];
 
   constructor(private router: Router) {
@@ -152,9 +133,17 @@ export class MainComponent implements AfterViewInit, OnDestroy {
         zoom: 13
       });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      this.layerNormal = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19
-      }).addTo(this.previewMap);
+      });
+
+      this.layerSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+      });
+
+      this.layerNormal.addTo(this.previewMap);
+      this.isSatelliteMode = false;
 
       this.mapInitialized = true;
     } catch (e) {
@@ -166,6 +155,20 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  toggleMapMode(): void {
+    if (!this.previewMap) return;
+    this.isSatelliteMode = !this.isSatelliteMode;
+    if (this.isSatelliteMode) {
+      this.previewMap.removeLayer(this.layerNormal);
+      this.layerSatellite.addTo(this.previewMap);
+      this.previewMap.setMaxZoom(17);
+    } else {
+      this.previewMap.removeLayer(this.layerSatellite);
+      this.layerNormal.addTo(this.previewMap);
+      this.previewMap.setMaxZoom(19);
+    }
+  }
+
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
   }
@@ -173,29 +176,25 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   onSectionChange(section: string) {
     this.activeSection = section;
 
-    if (section === 'mapa') {
-      this.router.navigate(['/mapa']);
+    if (section === 'mapa' || section === 'rutas') {
+      this.router.navigate(['/main', 'mapa']);
     } else if (section === 'vehiculos') {
       this.router.navigate(['/main', 'vehiculos']);
     } else if (section === 'inicio' || section === 'main') {
       this.router.navigate(['/main']);
-    } else if (section === 'rutas') {
-      this.router.navigate(['/mapa']);
+    } else if (section === 'registro-conductores') {
+      this.router.navigate(['/main', 'registro-conductores']);
+    } else if (section === 'asignaciones') {
+      this.router.navigate(['/main', 'asignaciones']);
     }
   }
 
   verRutaActiva() {
-    this.router.navigate(['/mapa']);
+    this.router.navigate(['/main', 'mapa']);
   }
 
   abrirMapa() {
-    this.router.navigate(['/mapa'], { queryParams: { create: '1' } });
-  }
-
-  verVehiculosActivos() {}
-
-  marcarLeido(id: number) {
-    this.avisos = this.avisos.filter(a => a.id !== id);
+    this.router.navigate(['/main', 'mapa'], { queryParams: { create: '1' } });
   }
 
   onLogout() {

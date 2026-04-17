@@ -1,42 +1,31 @@
 <aside class="sidebar" [class.collapsed]="!isOpen">
 
-  <!-- Logo -->
-  <div class="logo-section">
-    <div class="logo">EB</div>
-    <div class="logo-text">
-      <h1>EcoBahía</h1>
-      <p>Sistema de Recolección</p>
+  <!-- User Section (Top) -->
+  <div class="user-section-top">
+    <div class="user-avatar">
+      {{ usuario?.email?.charAt(0)?.toUpperCase() || 'U' }}
+    </div>
+    <div class="user-role">
+      {{ rolUsuario | uppercase }}
     </div>
   </div>
 
-  <!-- MENÚ -->
+  <!-- Divider -->
+  <div class="sidebar-divider"></div>
+
+  <!-- Menu -->
   <nav class="menu">
     <button 
       *ngFor="let item of menuItems" 
       [class.active]="activeSection === item.id"
       (click)="navigateTo(item)">
-
-      <i [class]="item.icon"></i>
       <span>{{ item.label }}</span>
-
     </button>
   </nav>
 
-  <!-- USER INFO -->
-  <div class="user-section">
-    <div class="user-info">
-
-      <!-- Avatar con inicial -->
-      <div class="user-avatar">
-        {{ usuario?.email?.charAt(0)?.toUpperCase() || 'U' }}
-      </div>
-
-      <!-- Rol dinámico -->
-      <span>{{ rolUsuario }}</span>
-    </div>
-
+  <!-- Logout (Bottom) -->
+  <div class="logout-section">
     <button class="logout-btn" (click)="logout()">
-      <i class="icon-logout"></i>
       Cerrar sesión
     </button>
   </div>

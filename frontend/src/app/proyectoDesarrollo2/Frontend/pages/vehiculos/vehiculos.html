@@ -12,49 +12,52 @@
 
 <div class="vehicles-container">
 
-  <header class="header">
-    <h1>Vehículos</h1>
+  <div class="vehicles-card">
+    <div class="card-header">
+      <h2>Vehículos</h2>
+      
+      <!-- ADMIN y CONDUCTOR pueden agregar -->
+      <button class="btn-primary" (click)="openAddModal()" *ngIf="esAdmin || esConductor">
+        Agregar Vehículo
+      </button>
+    </div>
 
-    <!-- ADMIN y CONDUCTOR pueden agregar -->
-    <button class="btn-primary" (click)="openAddModal()" *ngIf="esAdmin || esConductor">
-      ➕ Agregar Vehículo
-    </button>
-  </header>
+    <div class="card-body">
+      <table class="vehicles-table">
+        <thead>
+          <tr>
+            <th>PLACA</th>
+            <th>MARCA</th>
+            <th>MODELO</th>
+            <th>ACTIVO</th>
+            <th *ngIf="esAdmin || esConductor">ACCIONES</th>
+          </tr>
+        </thead>
 
-  <main>
-    <table class="vehicles-table">
-      <thead>
-        <tr>
-          <th>Placa</th>
-          <th>Marca</th>
-          <th>Modelo</th>
-          <th>Activo</th>
-          <th *ngIf="esAdmin || esConductor">Acciones</th>
-        </tr>
-      </thead>
+        <tbody>
+          <tr *ngFor="let vehiculo of vehicles">
+            <td>{{ vehiculo.placa }}</td>
+            <td>{{ vehiculo.marca }}</td>
+            <td>{{ vehiculo.modelo }}</td>
+            <td>{{ vehiculo.activo ? 'Sí' : 'No' }}</td>
 
-      <tbody>
-        <tr *ngFor="let vehiculo of vehicles">
-          <td>{{ vehiculo.placa }}</td>
-          <td>{{ vehiculo.marca }}</td>
-          <td>{{ vehiculo.modelo }}</td>
-          <td>{{ vehiculo.activo ? 'Sí' : 'No' }}</td>
+            <td *ngIf="esAdmin || esConductor">
+              <!-- Admin y Conductor pueden editar -->
+              <button class="btn-edit" (click)="editVehicle(vehiculo)" *ngIf="esAdmin || esConductor">
+                Editar
+              </button>
 
-          <td *ngIf="esAdmin || esConductor">
-            <!-- Admin y Conductor pueden editar -->
-            <button (click)="editVehicle(vehiculo)" *ngIf="esAdmin || esConductor">
-              ✏️ Editar
-            </button>
+              <!-- Solo Admin elimina -->
+              <button class="btn-delete" (click)="deleteVehicle(vehiculo.id!)" *ngIf="esAdmin || esConductor">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-            <!-- Solo Admin elimina -->
-            <button (click)="deleteVehicle(vehiculo.id!)" *ngIf="esAdmin || esConductor">
-              🗑️ Eliminar
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </main>
 </div>
 
 

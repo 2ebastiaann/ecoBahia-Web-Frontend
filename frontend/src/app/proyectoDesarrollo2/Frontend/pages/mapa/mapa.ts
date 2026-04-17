@@ -71,16 +71,40 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
   // Map
   // ===================================================
 
+  layerNormal!: L.TileLayer;
+  layerSatellite!: L.TileLayer;
+  isSatelliteMode = false;
+
   private initMap(): void {
     this.map = L.map('mapContainer', {
       center: [3.8773, -77.0277],
       zoom: 14
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-      .addTo(this.map);
+    // Layer Normal
+    this.layerNormal = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    
+    // Layer Satélite (Usando ESRI World Imagery que es gratuito y sin API key)
+    this.layerSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri'
+    });
+
+    this.layerNormal.addTo(this.map);
 
     this.map.on('click', (e: L.LeafletMouseEvent) => this.onMapClick(e));
+  }
+
+  toggleMapMode(): void {
+    this.isSatelliteMode = !this.isSatelliteMode;
+    if (this.isSatelliteMode) {
+      this.map.removeLayer(this.layerNormal);
+      this.layerSatellite.addTo(this.map);
+      this.map.setMaxZoom(17); // Límite inferior para satélite
+    } else {
+      this.map.removeLayer(this.layerSatellite);
+      this.layerNormal.addTo(this.map);
+      this.map.setMaxZoom(19); // Límite por defecto para normal
+    }
   }
 
   // Genera HTML SVG para el pin de ruta. Color en formato HEX y tamaño en px (cuadrado).

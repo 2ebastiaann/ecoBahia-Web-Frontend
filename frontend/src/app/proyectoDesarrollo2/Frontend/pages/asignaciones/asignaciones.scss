@@ -37,6 +37,10 @@ $border-light: #f3f4f6;
   padding: 2rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   animation: fadeInUp 0.4s ease-out;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
 
   .vehicles-card {
     background: $bg-white;
@@ -129,23 +133,6 @@ $border-light: #f3f4f6;
           text-align: center;
           border-bottom: 1px solid $border-light;
 
-          .btn-edit {
-            background: rgba(16, 185, 129, 0.1);
-            color: $green-dark;
-            border: none;
-            padding: 0.4rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-right: 0.5rem;
-            transition: all 0.2s ease;
-
-            &:hover {
-              background: rgba(16, 185, 129, 0.2);
-            }
-          }
-
           .btn-delete {
             background: rgba(220, 38, 38, 0.1);
             color: #dc2626;
@@ -170,7 +157,6 @@ $border-light: #f3f4f6;
     }
   }
 
-  // Responsive design
   @media (max-width: 768px) {
     padding: 1rem;
 
@@ -193,7 +179,7 @@ $border-light: #f3f4f6;
     }
     
     .vehicles-table {
-      min-width: 600px; // Ensure table doesn't collapse too much
+      min-width: 600px;
     }
   }
 }
@@ -260,7 +246,7 @@ $border-light: #f3f4f6;
       letter-spacing: 0.5px;
     }
 
-    input, select {
+    select {
       width: 100%;
       padding: 0.75rem 1rem;
       background: $bg-main;
@@ -271,6 +257,7 @@ $border-light: #f3f4f6;
       margin-bottom: 1.5rem;
       box-sizing: border-box;
       transition: all 0.2s ease;
+      cursor: pointer;
 
       &:focus {
         outline: none;
@@ -278,10 +265,6 @@ $border-light: #f3f4f6;
         background: $bg-white;
         box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
       }
-    }
-    
-    select {
-      cursor: pointer;
     }
 
     .modal-actions {

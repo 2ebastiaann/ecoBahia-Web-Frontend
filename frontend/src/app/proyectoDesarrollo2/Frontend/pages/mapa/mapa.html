@@ -1,111 +1,101 @@
 <div class="map-page-container">
-
-  <!-- CONTENEDOR DE NOTIFICACIONES -->
   <app-notification-container></app-notification-container>
 
-  <!-- BARRA SUPERIOR -->
-  <div class="map-header-bar">
+  <!-- CONTENEDOR MULTI-PANEL -->
+  <div class="map-panels-grid">
 
-    <div class="header-left">
-      <button class="btn btn-back" (click)="router.navigate(['/main'])">
-        ⬅ Volver
-      </button>
+    <!-- PANEL DEL MAPA (IZQUIERDA) -->
+    <div class="panel-card map-panel">
+      
+      <!-- HEADER MAPA -->
+      <div class="panel-header">
+        <div class="header-left">
+          <!-- Espacio para mantener centrado el titulo si es necesario -->
+        </div>
+
+        <div class="header-center">
+          <h2>🗺️ GESTOR DE RUTAS</h2>
+        </div>
+
+        <div class="header-right">
+          <button class="btn-primary"
+                  *ngIf="creandoRuta && esAdmin"
+                  (click)="guardarRuta()">
+            Guardar Ruta
+          </button>
+
+          <button class="btn-danger"
+                  *ngIf="creandoRuta && esAdmin"
+                  (click)="limpiarMapa()">
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTENIDO MAPA -->
+      <div class="panel-body map-body">
+        
+        <!-- Botón flotante para Map Mode -->
+        <button class="btn-map-mode" (click)="toggleMapMode()" title="Alternar Vista Satélite">
+          {{ isSatelliteMode ? '🗺️ Normal' : '🛰️ Satélite' }}
+        </button>
+
+        <div id="mapContainer"></div>
+      </div>
+
     </div>
 
-    <div class="header-center">
-      <h2>🗺️ GESTOR DE RUTAS</h2>
-    </div>
+    <!-- PANEL DE RUTAS REGISTRADAS (DERECHA) -->
+    <div class="panel-card routes-panel">
+      
+      <!-- HEADER RUTAS -->
+      <div class="panel-header routes-header">
+        <h2>Rutas Registradas</h2>
+        <button class="btn-create"
+                *ngIf="!creandoRuta && esAdmin"
+                (click)="empezarCrearRuta()">
+          Crear
+        </button>
+      </div>
 
-    <div class="header-right">
-
-      <!-- Crear ruta -->
-      <button class="btn btn-primary"
-              *ngIf="!creandoRuta && esAdmin"
-              (click)="empezarCrearRuta()">
-        ➕ Crear Ruta
-      </button>
-
-      <!-- Guardar ruta -->
-      <button class="btn btn-success"
-              *ngIf="creandoRuta && esAdmin"
-              (click)="guardarRuta()">
-        ✔ Guardar Ruta
-      </button>
-
-      <!-- Limpiar -->
-      <button class="btn btn-danger"
-              *ngIf="creandoRuta && esAdmin"
-              (click)="limpiarMapa()">
-        🗑 Limpiar
-      </button>
-
-    </div>
-
-  </div>
-
-  <!-- CONTENIDO PRINCIPAL -->
-  <div class="map-content-wrapper">
-
-    <!-- MAPA -->
-    <div class="map-section">
-      <div id="mapContainer"></div>
-    </div>
-
-    <!-- SIDEBAR CON LISTA DE RUTAS -->
-    <div class="routes-sidebar">
-
-      <h3>Rutas Registradas</h3>
-
-      <div class="routes-list-container">
-
+      <!-- LISTA DE RUTAS -->
+      <div class="panel-body routes-list-container">
+        
         <!-- Cada ruta -->
-        <div class="ruta-item"
-             *ngFor="let r of rutas">
-
+        <div class="ruta-item" *ngFor="let r of rutas">
+          <div class="ruta-color-line" [style.background]="r.color_hex || '#10b981'"></div>
           <div class="ruta-info">
             <div class="ruta-name">{{ r.nombre_ruta }}</div>
             <div class="ruta-points">
               {{ (r.shape?.coordinates?.length || 0) }} {{ ((r.shape?.coordinates?.length || 0) === 1) ? 'punto' : 'puntos' }}
             </div>
-            <div class="ruta-color"
-                 [style.background]="r.color_hex || '#10b981'">
-            </div>
           </div>
-
           <div class="ruta-actions">
-            <button class="btn-view"
-                    (click)="mostrarRuta(r)">
-              🔍 Ver
+            <button class="btn-view" (click)="mostrarRuta(r)">
+               Ver
             </button>
           </div>
-
         </div>
 
         <!-- Si no hay rutas -->
         <div class="no-routes" *ngIf="rutas.length === 0">
-          No hay rutas registradas aún
+          No hay rutas registradas.
         </div>
-
       </div>
 
     </div>
 
-  </div>
-
+  </div> <!-- FIN map-panels-grid -->
 
   <!-- MODAL CREAR RUTA -->
   <div class="modal-overlay"
        *ngIf="mostrarModalNombreRuta"
        (click)="mostrarModalNombreRuta = false">
 
-    <div class="modal"
-         (click)="$event.stopPropagation()">
-
-      <h3>Crear Nueva Ruta</h3>
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Crear Nueva Ruta</h2>
 
       <div class="modal-form">
-
-        <!-- Nombre -->
         <div class="form-group">
           <label>Nombre de la ruta</label>
           <input type="text"
@@ -114,27 +104,18 @@
                  class="form-input"
                  autofocus>
         </div>
-
       </div>
 
-      <!-- Botones -->
       <div class="modal-buttons">
-
-        <button class="btn btn-cancel"
-                (click)="mostrarModalNombreRuta = false">
+        <button class="btn-secondary" (click)="mostrarModalNombreRuta = false">
           Cancelar
         </button>
-
-        <button class="btn btn-primary"
-                (click)="confirmarNombreRuta()"
-                *ngIf="esAdmin">
+        <button class="btn-primary" (click)="confirmarNombreRuta()" *ngIf="esAdmin">
           Comenzar a Dibujar
         </button>
-
       </div>
 
     </div>
-
   </div>
 
 </div>

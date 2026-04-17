@@ -193,7 +193,7 @@ $border-light: #f3f4f6;
     }
     
     .vehicles-table {
-      min-width: 600px; // Ensure table doesn't collapse too much
+      min-width: 600px;
     }
   }
 }
@@ -227,6 +227,17 @@ $border-light: #f3f4f6;
   border: 1px solid rgba(0, 0, 0, 0.05);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  
+  // Custom for drivers form
+  .row-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0 !important; // override global
+    
+    .half-width {
+      flex: 1;
+    }
+  }
 
   h2 {
     color: $text-primary;
@@ -260,7 +271,7 @@ $border-light: #f3f4f6;
       letter-spacing: 0.5px;
     }
 
-    input, select {
+    input {
       width: 100%;
       padding: 0.75rem 1rem;
       background: $bg-main;
@@ -278,10 +289,6 @@ $border-light: #f3f4f6;
         background: $bg-white;
         box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
       }
-    }
-    
-    select {
-      cursor: pointer;
     }
 
     .modal-actions {

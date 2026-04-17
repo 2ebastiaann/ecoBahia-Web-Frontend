@@ -1,16 +1,11 @@
 <app-notification-container></app-notification-container>
 
 <div class="login-container">
-    <!-- Decorative circles -->
-    <div class="decorative-circle circle-1"></div>
-    <div class="decorative-circle circle-2"></div>
-    <div class="decorative-circle circle-3"></div>
-
     <!-- Main container -->
     <div class="login-card">
         <div class="card-content">
             
-            <!-- Left panel - Decorative -->
+            <!-- Left panel - Green branding -->
             <div class="left-panel">
                 <!-- Decorative elements -->
                 <div class="panel-decoration decoration-1"></div>
@@ -82,7 +77,7 @@
                                 type="text"
                                 [(ngModel)]="email"
                                 (keypress)="handleKeyPress($event)"
-                                placeholder="@username"
+                                placeholder="administrador@correo.com"
                                 class="input-field"
                             />
                         </div>
@@ -102,13 +97,13 @@
                                 type="password"
                                 [(ngModel)]="password"
                                 (keypress)="handleKeyPress($event)"
-                                placeholder="••••••••"
+                                placeholder="••••••"
                                 class="input-field"
                             />
                         </div>
                     </div>
 
-                    <!-- Forgot password -->
+                    <!-- Options row -->
                     <div class="form-options">
                         <label class="checkbox-label">
                             <input 
@@ -154,25 +149,6 @@
                         </svg>
                         <span>Continuar con Google</span>
                     </button>
-                </div>
-
-                <!-- Register CTA - MEJORADO -->
-                <div class="form-footer">
-                    <div class="register-section">
-                        <p class="register-text">¿No tienes cuenta?</p>
-                        <button 
-                            (click)="handleRegister()"
-                            class="register-button"
-                        >
-                            <svg class="register-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <line x1="19" x2="19" y1="8" y2="14"/>
-                                <line x1="22" x2="16" y1="11" y2="11"/>
-                            </svg>
-                            <span>CREAR CUENTA NUEVA</span>
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>

@@ -1,283 +1,124 @@
-// Variables de colores
+// Variables
 $green-primary: #10b981;
-$green-secondary: #059669;
-$green-light: #d1fae5;
-$emerald: #34d399;
-$teal: #14b8a6;
-
-// Colores oscuros
-$dark-bg: #0f172a;
-$dark-card: #1e293b;
-$dark-card-hover: #334155;
-$dark-text: #e2e8f0;
-$dark-text-muted: #94a3b8;
-
-// Animaciones
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse-soft {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-}
-
-@keyframes glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 30px rgba(16, 185, 129, 0.7);
-  }
-}
+$green-dark: #059669;
+$green-darker: #047857;
+$green-light: #34d399;
+$white: #ffffff;
+$text-light: rgba(255, 255, 255, 0.9);
 
 .sidebar {
-  width: 256px;
+  width: 250px;
   height: 100vh;
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-  color: white;
+  background-color: $green-dark;
+  color: $white;
   display: flex;
   flex-direction: column;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s ease;
   flex-shrink: 0;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5), 
-              inset -1px 0 0 rgba(16, 185, 129, 0.2);
   position: relative;
   overflow: hidden;
-  border-right: 1px solid rgba(16, 185, 129, 0.2);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 20% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
-    pointer-events: none;
-  }
 
   &.collapsed {
     width: 0;
     overflow: hidden;
   }
+}
 
-  .logo-section {
-    padding: 1.5rem;
-    border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+// User Section Top
+.user-section-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem 1.5rem;
+  background-color: $green-darker;
+
+  .user-avatar {
+    width: 64px;
+    height: 64px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    animation: slideDown 0.6s ease-out;
-    position: relative;
-    z-index: 1;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
-
-    .logo {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, $emerald 0%, $green-primary 100%);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 1.5rem;
-      box-shadow: 0 8px 16px rgba(16, 185, 129, 0.5);
-      transition: all 0.3s ease;
-      animation: glow 3s ease-in-out infinite;
-
-      &:hover {
-        transform: scale(1.1) rotate(5deg);
-      }
-    }
-
-    .logo-text {
-      h1 {
-        font-size: 1.25rem;
-        font-weight: bold;
-        margin: 0;
-        background: linear-gradient(90deg, $emerald 0%, $green-primary 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      p {
-        font-size: 0.75rem;
-        color: $dark-text-muted;
-        margin: 0;
-      }
-    }
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $white;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  .menu {
-    flex: 1;
-    padding: 1rem 0;
-    position: relative;
-    z-index: 1;
+  .user-role {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: $white;
+  }
+}
 
-    button {
-      width: 100%;
-      padding: 0.875rem 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      background: none;
-      border: none;
-      color: $dark-text;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      text-align: left;
-      position: relative;
-      font-weight: 500;
-      animation: slideInLeft 0.5s ease-out forwards;
-      opacity: 0;
+// Divider
+.sidebar-divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.15);
+  margin: 0;
+}
 
-      @for $i from 1 through 5 {
-        &:nth-child(#{$i}) {
-          animation-delay: #{$i * 0.1}s;
-        }
-      }
+// Menu Items
+.menu {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-y: auto;
 
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 4px;
-        height: 0;
-        background: linear-gradient(180deg, $emerald 0%, $green-primary 100%);
-        transition: height 0.3s ease;
-        border-radius: 0 4px 4px 0;
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-      }
+  button {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: $white;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
 
-      &:hover {
-        background: rgba(16, 185, 129, 0.15);
-        transform: translateX(4px);
-        color: $emerald;
-        
-        &::before {
-          height: 60%;
-        }
-      }
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
 
-      &.active {
-        background: linear-gradient(90deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.1) 100%);
-        border-left: 4px solid $emerald;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        color: $emerald;
-
-        i {
-          animation: pulse-soft 2s ease-in-out infinite;
-        }
-      }
-
-      i {
-        font-size: 1.2rem;
-        transition: transform 0.3s ease;
-      }
-
-      &:hover i {
-        transform: scale(1.1);
-      }
+    &.active {
+      background-color: $green-light;
+      color: $green-darker;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
   }
+}
 
-  .user-section {
-    padding: 1rem;
-    border-top: 1px solid rgba(16, 185, 129, 0.2);
-    position: relative;
-    z-index: 1;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
+// Logout Section
+.logout-section {
+  padding: 1rem;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-      padding: 0.75rem;
-      border-radius: 12px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      transition: all 0.3s ease;
+  .logout-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: rgba(220, 38, 38, 0.8); // soft red
+    color: $white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 
-      &:hover {
-        background: rgba(16, 185, 129, 0.2);
-        transform: translateY(-2px);
-        border-color: rgba(16, 185, 129, 0.3);
-      }
-
-      .user-avatar {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, $green-primary 0%, $emerald 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
-        font-weight: 600;
-        border: 2px solid rgba(16, 185, 129, 0.3);
-      }
-
-      span {
-        font-weight: 500;
-        color: $dark-text;
-      }
-    }
-
-    .logout-btn {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      font-weight: 500;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-
-      &:hover {
-        background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(220, 38, 38, 0.5);
-      }
-
-      &:active {
-        transform: translateY(0);
-      }
+    &:hover {
+      background-color: rgba(220, 38, 38, 1);
     }
   }
 }
@@ -287,6 +128,5 @@ $dark-text-muted: #94a3b8;
   .sidebar {
     position: fixed;
     z-index: 1000;
-    height: 100vh;
   }
 }

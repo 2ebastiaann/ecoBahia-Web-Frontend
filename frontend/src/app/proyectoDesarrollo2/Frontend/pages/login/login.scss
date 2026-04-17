@@ -1,14 +1,13 @@
 // Importar fuente Inter desde Google Fonts
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-// Variables - Palette EcoBahía
-$primary-teal: #10b981;
-$secondary-teal: #14b8a6;
-$dark-blue: #1e3a4c;
-$darker-blue: #182c38;
-$darkest-blue: #0f1f29;
-$accent-green: #34d399;
-$light-teal: #5eead4;
+// Variables - Palette EcoBahía (green theme matching screenshot)
+$primary-green: #10b981;
+$secondary-green: #0d9668;
+$light-green: #34d399;
+$lighter-green: #6ee7b7;
+$lightest-green: #a7f3d0;
+$teal-accent: #14b8a6;
 $gray-50: #f9fafb;
 $gray-100: #f3f4f6;
 $gray-200: #e5e7eb;
@@ -37,59 +36,14 @@ $white: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-// Main container
+// Main container — green gradient background like screenshot
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, $darkest-blue 0%, $darker-blue 50%, $dark-blue 100%);
+  background: linear-gradient(135deg, #0d9668 0%, #10b981 30%, #34d399 60%, #6ee7b7 100%);
   @include flex-center;
-  padding: 1.5rem;
+  padding: 2rem;
   position: relative;
   overflow: hidden;
-
-  // Decorative circles
-  .decorative-circle {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(100px);
-    animation: float 20s ease-in-out infinite;
-    
-    &.circle-1 {
-      top: 5rem;
-      left: 2.5rem;
-      width: 20rem;
-      height: 20rem;
-      background-color: rgba(16, 185, 129, 0.15);
-      animation-delay: 0s;
-    }
-    
-    &.circle-2 {
-      bottom: 5rem;
-      right: 2.5rem;
-      width: 28rem;
-      height: 28rem;
-      background-color: rgba(20, 184, 166, 0.12);
-      animation-delay: 3s;
-    }
-    
-    &.circle-3 {
-      top: 50%;
-      left: 33%;
-      width: 16rem;
-      height: 16rem;
-      background-color: rgba(52, 211, 153, 0.08);
-      filter: blur(80px);
-      animation-delay: 6s;
-    }
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-30px) scale(1.05);
-  }
 }
 
 // Card
@@ -97,66 +51,67 @@ $white: #ffffff;
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 80rem;
+  max-width: 960px;
 
   .card-content {
     background-color: $white;
-    border-radius: 2rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.1);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.25);
     overflow: hidden;
     display: grid;
     grid-template-columns: 1fr 1fr;
 
     @media (max-width: 768px) {
       grid-template-columns: 1fr;
-      border-radius: 1.5rem;
+      border-radius: 1.25rem;
     }
   }
 }
 
-// Left Panel
+// Left Panel — Green gradient (matching screenshot)
 .left-panel {
-  background: linear-gradient(135deg, $dark-blue 0%, $darkest-blue 100%);
-  padding: 3.5rem;
+  background: linear-gradient(160deg, #10b981 0%, #0d9668 40%, #047857 100%);
+  padding: 3rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
   overflow: hidden;
+  min-height: 520px;
 
   // Decorative elements
   .panel-decoration {
     position: absolute;
     
     &.decoration-1 {
-      top: 2.5rem;
-      right: 2.5rem;
-      width: 8rem;
-      height: 8rem;
-      border: 3px solid rgba(16, 185, 129, 0.25);
+      top: 2rem;
+      right: 2rem;
+      width: 7rem;
+      height: 7rem;
+      border: 2px solid rgba(255, 255, 255, 0.15);
       border-radius: 50%;
       animation: pulse 4s ease-in-out infinite;
     }
     
     &.decoration-2 {
       bottom: 5rem;
-      left: 2.5rem;
-      width: 6rem;
-      height: 6rem;
-      border: 3px solid rgba(20, 184, 166, 0.2);
+      left: 2rem;
+      width: 5rem;
+      height: 5rem;
+      border: 2px solid rgba(255, 255, 255, 0.1);
       border-radius: 50%;
       animation: pulse 5s ease-in-out infinite;
     }
     
     &.decoration-3 {
-      top: 50%;
-      left: 25%;
-      width: 4rem;
-      height: 4rem;
-      background-color: rgba(52, 211, 153, 0.15);
+      top: 45%;
+      left: 20%;
+      width: 3.5rem;
+      height: 3.5rem;
+      background-color: rgba(255, 255, 255, 0.08);
       border-radius: 0.5rem;
       transform: rotate(45deg);
-      animation: rotate 10s linear infinite;
+      animation: rotate 12s linear infinite;
     }
   }
 
@@ -172,12 +127,8 @@ $white: #ffffff;
   }
 
   @keyframes rotate {
-    from {
-      transform: rotate(45deg);
-    }
-    to {
-      transform: rotate(405deg);
-    }
+    from { transform: rotate(45deg); }
+    to { transform: rotate(405deg); }
   }
 
   .panel-header {
@@ -189,27 +140,28 @@ $white: #ffffff;
   .logo-container {
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    gap: 0.75rem;
     margin-bottom: 2.5rem;
 
     .logo-icon {
-      width: 4rem;
-      height: 4rem;
-      background: linear-gradient(135deg, $primary-teal 0%, $secondary-teal 100%);
-      border-radius: 1.125rem;
+      width: 3.5rem;
+      height: 3.5rem;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 1rem;
       @include flex-center;
-      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
 
       .leaf-icon {
-        width: 2.5rem;
-        height: 2.5rem;
+        width: 2rem;
+        height: 2rem;
         color: $white;
       }
     }
 
     .logo-text {
       .app-name {
-        font-size: 2rem;
+        font-size: 1.75rem;
         font-weight: 800;
         color: $white;
         margin: 0;
@@ -218,32 +170,32 @@ $white: #ffffff;
       }
 
       .app-subtitle {
-        font-size: 0.875rem;
+        font-size: 0.8rem;
         font-weight: 500;
-        color: rgba(94, 234, 212, 0.9);
+        color: rgba(255, 255, 255, 0.8);
         margin: 0.125rem 0 0 0;
-        letter-spacing: 0.01em;
+        letter-spacing: 0.02em;
       }
     }
   }
 
   .panel-info {
-    margin-top: 2rem;
+    margin-top: 1rem;
 
     .panel-title {
-      font-size: 2.5rem;
+      font-size: 2.25rem;
       font-weight: 800;
       color: $white;
-      line-height: 1.15;
-      margin-bottom: 1.5rem;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
       letter-spacing: -0.03em;
     }
 
     .panel-description {
-      font-size: 1.125rem;
+      font-size: 1rem;
       font-weight: 400;
-      color: rgba(209, 250, 229, 0.95);
-      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.6;
       letter-spacing: -0.01em;
     }
   }
@@ -254,21 +206,21 @@ $white: #ffffff;
     z-index: 10;
     display: flex;
     align-items: center;
-    gap: 1.125rem;
+    gap: 1rem;
 
     .truck-icon-container {
-      width: 5rem;
-      height: 5rem;
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(20, 184, 166, 0.15));
-      border-radius: 1.125rem;
+      width: 4rem;
+      height: 4rem;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 1rem;
       @include flex-center;
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(94, 234, 212, 0.2);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
 
       .truck-icon {
-        width: 3rem;
-        height: 3rem;
-        color: $light-teal;
+        width: 2.25rem;
+        height: 2.25rem;
+        color: $white;
       }
     }
 
@@ -277,15 +229,14 @@ $white: #ffffff;
 
       .truck-title {
         font-weight: 600;
-        font-size: 1rem;
-        margin: 0 0 0.25rem 0;
-        letter-spacing: -0.01em;
+        font-size: 0.95rem;
+        margin: 0 0 0.15rem 0;
       }
 
       .truck-subtitle {
-        font-size: 0.875rem;
+        font-size: 0.8rem;
         font-weight: 400;
-        color: rgba(209, 250, 229, 0.85);
+        color: rgba(255, 255, 255, 0.75);
         margin: 0;
       }
     }
@@ -294,46 +245,45 @@ $white: #ffffff;
 
 // Right Panel
 .right-panel {
-  padding: 3.5rem;
+  padding: 3rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   background-color: $gray-50;
 
   .form-header {
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
 
     .form-title {
-      font-size: 2rem;
+      font-size: 1.875rem;
       font-weight: 800;
       color: $gray-900;
-      margin: 0 0 0.625rem 0;
+      margin: 0 0 0.5rem 0;
       letter-spacing: -0.02em;
     }
 
     .form-subtitle {
-      color: $gray-600;
-      font-size: 0.9375rem;
+      color: $gray-500;
+      font-size: 0.9rem;
       font-weight: 400;
       margin: 0;
-      letter-spacing: -0.01em;
     }
   }
 
   .form-body {
     display: flex;
     flex-direction: column;
-    gap: 1.375rem;
+    gap: 1.25rem;
   }
 
   // Input groups
   .input-group {
     .input-label {
       display: block;
-      font-size: 0.875rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      color: $gray-700;
-      margin-bottom: 0.625rem;
+      color: $gray-600;
+      margin-bottom: 0.5rem;
       letter-spacing: -0.01em;
     }
 
@@ -348,8 +298,8 @@ $white: #ffffff;
         pointer-events: none;
 
         .icon {
-          width: 1.25rem;
-          height: 1.25rem;
+          width: 1.125rem;
+          height: 1.125rem;
           color: $gray-400;
           @include transition(color, 0.2s);
         }
@@ -357,23 +307,20 @@ $white: #ffffff;
 
       .input-field {
         width: 100%;
-        padding: 0.875rem 1rem 0.875rem 3rem;
-        border: 2px solid $gray-200;
-        border-radius: 0.875rem;
+        padding: 0.8rem 1rem 0.8rem 2.75rem;
+        border: 1.5px solid $gray-200;
+        border-radius: 0.75rem;
         background-color: $white;
         color: $gray-900;
-        font-size: 0.9375rem;
+        font-size: 0.875rem;
         font-weight: 400;
         @include transition(all, 0.2s);
+        box-sizing: border-box;
 
         &:focus {
           outline: none;
-          border-color: $primary-teal;
-          box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
-          
-          & + .input-icon .icon {
-            color: $primary-teal;
-          }
+          border-color: $primary-green;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
 
         &::placeholder {
@@ -389,62 +336,43 @@ $white: #ffffff;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 0.25rem;
 
     .checkbox-label {
       display: flex;
       align-items: center;
       cursor: pointer;
-      @include transition(opacity);
-
-      &:hover {
-        opacity: 0.8;
-      }
 
       .checkbox-input {
-        width: 1.125rem;
-        height: 1.125rem;
-        border: 2px solid $gray-300;
-        border-radius: 0.375rem;
+        width: 1rem;
+        height: 1rem;
+        border: 1.5px solid $gray-300;
+        border-radius: 0.25rem;
         cursor: pointer;
-        @include transition(all, 0.2s);
 
         &:checked {
-          accent-color: $primary-teal;
-        }
-
-        &:focus {
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+          accent-color: $primary-green;
         }
       }
 
       .checkbox-text {
-        margin-left: 0.625rem;
-        font-size: 0.875rem;
+        margin-left: 0.5rem;
+        font-size: 0.8rem;
         font-weight: 500;
-        color: $gray-700;
+        color: $gray-600;
       }
     }
 
     .forgot-password {
-      font-size: 0.875rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      color: $primary-teal;
+      color: $primary-green;
       background: none;
       border: none;
       cursor: pointer;
       @include transition(color);
-      letter-spacing: -0.01em;
 
       &:hover {
-        color: $secondary-teal;
-      }
-
-      &:focus {
-        outline: 2px solid $primary-teal;
-        outline-offset: 2px;
-        border-radius: 0.25rem;
+        color: $secondary-green;
       }
     }
   }
@@ -452,33 +380,28 @@ $white: #ffffff;
   // Login button
   .login-button {
     width: 100%;
-    padding: 1rem 1.5rem;
-    background: linear-gradient(90deg, $primary-teal 0%, $secondary-teal 100%);
+    padding: 0.875rem 1.5rem;
+    background: linear-gradient(90deg, $primary-green 0%, $teal-accent 100%);
     color: $white;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    letter-spacing: 0.025em;
+    letter-spacing: 0.03em;
     border: none;
-    border-radius: 0.875rem;
+    border-radius: 0.75rem;
     cursor: pointer;
-    box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.4);
     @include transition;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
 
     &:hover {
-      background: linear-gradient(90deg, $secondary-teal 0%, $dark-blue 100%);
+      background: linear-gradient(90deg, $secondary-green 0%, $primary-green 100%);
       transform: translateY(-2px);
-      box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.5);
+      box-shadow: 0 12px 28px -5px rgba(16, 185, 129, 0.5);
     }
 
     &:active {
       transform: translateY(0);
-      box-shadow: 0 5px 15px -3px rgba(16, 185, 129, 0.4);
-    }
-
-    &:focus {
-      outline: none;
-      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2), 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 4px 12px -3px rgba(16, 185, 129, 0.4);
     }
   }
 
@@ -486,8 +409,7 @@ $white: #ffffff;
   .divider {
     display: flex;
     align-items: center;
-    margin: 1.75rem 0 1.5rem 0;
-    gap: 1rem;
+    gap: 0.75rem;
 
     .divider-line {
       flex: 1;
@@ -496,179 +418,41 @@ $white: #ffffff;
     }
 
     .divider-text {
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       font-weight: 500;
-      color: $gray-500;
+      color: $gray-400;
       white-space: nowrap;
-      letter-spacing: -0.01em;
     }
   }
 
   // Google button
   .google-button {
     width: 100%;
-    padding: 0.875rem 1.5rem;
+    padding: 0.75rem 1.5rem;
     background-color: $white;
-    color: $gray-700;
-    font-size: 0.9375rem;
+    color: $gray-600;
+    font-size: 0.85rem;
     font-weight: 600;
-    border: 2px solid $gray-200;
-    border-radius: 0.875rem;
+    border: 1.5px solid $gray-200;
+    border-radius: 0.75rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: 0.625rem;
     @include transition;
-    letter-spacing: -0.01em;
 
     .google-icon {
-      width: 1.375rem;
-      height: 1.375rem;
+      width: 1.25rem;
+      height: 1.25rem;
       flex-shrink: 0;
     }
 
     &:hover {
       background-color: $gray-50;
       border-color: $gray-300;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
-    }
-
-    &:active {
-      transform: translateY(0);
-    }
-
-    &:focus {
-      outline: none;
-      border-color: $primary-teal;
-      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
-    }
-  }
-
-  // Footer
-  .form-footer {
-    margin-top: 2.5rem;
-
-    .register-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      padding: 1.5rem;
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(20, 184, 166, 0.12) 100%);
-      border-radius: 1rem;
-      border: 2px dashed rgba(16, 185, 129, 0.3);
-      position: relative;
-      overflow: hidden;
-
-      &::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(
-          45deg,
-          transparent 30%,
-          rgba(94, 234, 212, 0.1) 50%,
-          transparent 70%
-        );
-        animation: shine 3s ease-in-out infinite;
-      }
-
-      @keyframes shine {
-        0% {
-          transform: translateX(-100%) translateY(-100%) rotate(45deg);
-        }
-        100% {
-          transform: translateX(100%) translateY(100%) rotate(45deg);
-        }
-      }
-
-      .register-text {
-        font-size: 0.9375rem;
-        font-weight: 600;
-        color: $gray-700;
-        margin: 0;
-        letter-spacing: -0.01em;
-        position: relative;
-        z-index: 1;
-      }
-
-      .register-button {
-        width: 100%;
-        padding: 1rem 2rem;
-        background: linear-gradient(135deg, $primary-teal 0%, $secondary-teal 100%);
-        color: $white;
-        font-size: 0.9375rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        border: none;
-        border-radius: 0.875rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.625rem;
-        box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
-        @include transition;
-        position: relative;
-        z-index: 1;
-        overflow: hidden;
-
-        &::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0;
-          height: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.2);
-          transform: translate(-50%, -50%);
-          transition: width 0.6s, height 0.6s;
-        }
-
-        &:hover::before {
-          width: 300px;
-          height: 300px;
-        }
-
-        .register-icon {
-          width: 1.375rem;
-          height: 1.375rem;
-          position: relative;
-          z-index: 1;
-          @include transition(transform, 0.3s);
-        }
-
-        span {
-          position: relative;
-          z-index: 1;
-        }
-
-        &:hover {
-          background: linear-gradient(135deg, $secondary-teal 0%, $dark-blue 100%);
-          transform: translateY(-3px) scale(1.02);
-          box-shadow: 0 15px 35px -5px rgba(16, 185, 129, 0.5);
-
-          .register-icon {
-            transform: scale(1.1) rotate(5deg);
-          }
-        }
-
-        &:active {
-          transform: translateY(-1px) scale(1);
-          box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.4);
-        }
-
-        &:focus {
-          outline: none;
-          box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3), 0 10px 25px -5px rgba(16, 185, 129, 0.4);
-        }
-      }
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.1);
     }
   }
 }
@@ -681,13 +465,10 @@ $white: #ffffff;
 
   .left-panel {
     padding: 2.5rem;
-    
-    .panel-info .panel-title {
-      font-size: 2rem;
-    }
+    min-height: auto;
 
-    .panel-description {
-      font-size: 1rem;
+    .panel-info .panel-title {
+      font-size: 1.75rem;
     }
   }
 
@@ -695,50 +476,21 @@ $white: #ffffff;
     padding: 2.5rem;
 
     .form-header .form-title {
-      font-size: 1.75rem;
-    }
-
-    .form-footer {
-      margin-top: 2rem;
-
-      .register-section {
-        padding: 1.25rem;
-      }
-    }
-  }
-
-  .decorative-circle {
-    &.circle-1 {
-      width: 12rem;
-      height: 12rem;
-    }
-    
-    &.circle-2 {
-      width: 16rem;
-      height: 16rem;
+      font-size: 1.5rem;
     }
   }
 }
 
 @media (max-width: 480px) {
   .right-panel {
-    padding: 2rem;
-
-    .form-footer .register-section {
-      padding: 1rem;
-
-      .register-button {
-        padding: 0.875rem 1.5rem;
-        font-size: 0.875rem;
-      }
-    }
+    padding: 1.75rem;
   }
 
   .left-panel {
-    padding: 2rem;
+    padding: 1.75rem;
 
     .logo-container .logo-text .app-name {
-      font-size: 1.75rem;
+      font-size: 1.5rem;
     }
   }
 }
