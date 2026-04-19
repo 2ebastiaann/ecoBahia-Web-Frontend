@@ -12,7 +12,7 @@ import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-
   standalone: true,
   templateUrl: './asignaciones.html',
   styleUrls: ['./asignaciones.scss'],
-  imports: [CommonModule, ReactiveFormsModule, NotificationContainerComponent]
+  imports: [CommonModule, ReactiveFormsModule, NotificationContainerComponent, ConfirmDialogComponent]
 })
 export class AsignacionesComponent implements OnInit {
 
@@ -53,11 +53,19 @@ export class AsignacionesComponent implements OnInit {
 
   loadAllData(): void {
     this.api.getVehiculos().subscribe({
-      next: (res: any) => this.vehiculos = res.data || res || []
+      next: (res: any) => {
+        // Backend wraps as { msg, data: { current_page, data: [...vehicles] } }
+        // So res.data could be the paginated object with .data inside
+        const outer = res.data || res || {};
+        const vehicles = outer.data || outer;
+        this.vehiculos = Array.isArray(vehicles) ? vehicles : [];
+      },
+      error: () => this.vehiculos = []
     });
 
     this.api.getConductores().subscribe({
-      next: (res: any) => this.conductores = res || []
+      next: (res: any) => this.conductores = res || [],
+      error: () => this.conductores = []
     });
 
     this.api.getRutas().subscribe({
@@ -105,20 +113,34 @@ export class AsignacionesComponent implements OnInit {
 
   // ====================== DESACTIVAR ======================
 
+  showConfirmDialog = false;
+  private recorridoToDeactivate: any = null;
+
   desactivarRecorrido(recorrido: any): void {
     if (!this.esAdmin || !recorrido.activo) return;
-    
-    if (confirm('¿Estás seguro de que deseas forzar la finalización de este recorrido?')) {
-      this.api.desactivarRecorrido(recorrido.id).subscribe({
-        next: () => {
-          this.notificationService.success('Recorrido finalizado correctamente');
-          this.loadRecorridos();
-        },
-        error: (err: any) => {
-          this.notificationService.error(err.error?.mensaje || 'Error al finalizar recorrido');
-        }
-      });
-    }
+    this.recorridoToDeactivate = recorrido;
+    this.showConfirmDialog = true;
+  }
+
+  confirmDeactivate(): void {
+    this.showConfirmDialog = false;
+    if (!this.recorridoToDeactivate) return;
+
+    this.api.desactivarRecorrido(this.recorridoToDeactivate.id).subscribe({
+      next: () => {
+        this.notificationService.success('Recorrido finalizado correctamente');
+        this.loadRecorridos();
+      },
+      error: (err: any) => {
+        this.notificationService.error(err.error?.mensaje || 'Error al finalizar recorrido');
+      }
+    });
+    this.recorridoToDeactivate = null;
+  }
+
+  cancelDeactivate(): void {
+    this.showConfirmDialog = false;
+    this.recorridoToDeactivate = null;
   }
 
   // ====================== HELPERS ======================
@@ -128,9 +150,20 @@ export class AsignacionesComponent implements OnInit {
     return c ? `${c.nombre} ${c.apellido}` : 'Desconocido';
   }
 
-  getVehiculoPlaca(id: string): string {
-    const v = this.vehiculos.find((x: any) => x.id === id || x.id_vehiculo === id);
-    return v ? `${v.placa} (${v.marca})` : id;
+  getVehiculoPlaca(recorrido: any): string {
+    // First try the enriched fields from backend
+    if (recorrido.vehiculo_placa) {
+      const marca = recorrido.vehiculo_marca ? ` (${recorrido.vehiculo_marca})` : '';
+      return `${recorrido.vehiculo_placa}${marca}`;
+    }
+    // Fallback: client-side lookup
+    const id = recorrido.vehiculo_id;
+    if (!id) return 'Sin vehículo';
+    const idStr = String(id);
+    const v = this.vehiculos.find((x: any) =>
+      String(x.id) === idStr || String(x.id_vehiculo) === idStr
+    );
+    return v ? `${v.placa} (${v.marca})` : idStr.substring(0, 8) + '...';
   }
 
   getRutaName(id: string): string {

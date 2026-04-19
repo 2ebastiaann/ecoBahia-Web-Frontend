@@ -79,7 +79,8 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
   private initMap(): void {
     this.map = L.map('mapContainer', {
       center: [3.8773, -77.0277],
-      zoom: 14
+      zoom: 14,
+      maxZoom: 18
     });
 
     // Layer Normal
@@ -104,8 +105,9 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
     } else {
       this.map.removeLayer(this.layerSatellite);
       this.layerNormal.addTo(this.map);
-      this.map.setMaxZoom(19); // Límite por defecto para normal
+      this.map.setMaxZoom(18); // Límite para normal (OSM no carga más allá)
     }
+    setTimeout(() => this.map.invalidateSize(), 100);
   }
 
   // Genera HTML SVG para el pin de ruta. Color en formato HEX y tamaño en px (cuadrado).

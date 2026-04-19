@@ -43,30 +43,24 @@ $border-green: rgba(16, 185, 129, 0.2);
 }
 
 // ========================================
-// CONTENT SCROLL
+// CONTENT (no scrollea, el header queda fijo)
 // ========================================
 .content {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+}
 
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(16, 185, 129, 0.3);
-    border-radius: 10px;
-
-    &:hover {
-      background: rgba(16, 185, 129, 0.5);
-    }
-  }
+// ========================================
+// PAGE CONTENT (debajo del header, ocupa el resto)
+// ========================================
+.page-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 // ========================================
@@ -78,6 +72,8 @@ $border-green: rgba(16, 185, 129, 0.2);
   flex-direction: column;
   padding: 1.25rem 1.5rem;
   gap: 1.25rem;
+  min-height: 0;
+  overflow: hidden;
   animation: fadeInUp 0.4s ease-out;
 }
 
@@ -165,7 +161,7 @@ $border-green: rgba(16, 185, 129, 0.2);
   border: 2px solid #94a3b8;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  min-height: 400px;
+  min-height: 0;           // let flex determine height, no fixed min
   display: flex;
   flex-direction: column;
 
@@ -173,6 +169,7 @@ $border-green: rgba(16, 185, 129, 0.2);
     flex: 1;
     position: relative;
     min-height: 0;
+    overflow: hidden;       // prevent any internal overflow causing scrolls
 
     .btn-map-mode {
       position: absolute;
@@ -189,7 +186,7 @@ $border-green: rgba(16, 185, 129, 0.2);
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       transition: all 0.2s ease;
-  
+
       &:hover {
         background: #ffffff;
         transform: translateY(-2px);
@@ -203,6 +200,8 @@ $border-green: rgba(16, 185, 129, 0.2);
       position: absolute;
       top: 0;
       left: 0;
+      right: 0;
+      bottom: 0;
       z-index: 1;
     }
   }
@@ -212,26 +211,15 @@ $border-green: rgba(16, 185, 129, 0.2);
 .leaflet-container {
   width: 100% !important;
   height: 100% !important;
-  position: relative !important;
 }
 
 // ========================================
 // RESPONSIVE
 // ========================================
-@media (max-width: 1024px) {
-  .map-card {
-    min-height: 350px;
-  }
-}
-
 @media (max-width: 768px) {
   .dashboard-home {
     padding: 1rem;
     gap: 1rem;
-  }
-
-  .map-card {
-    min-height: 300px;
   }
 }
 

@@ -18,6 +18,9 @@ $white: #ffffff;
   flex-shrink: 0;
   animation: slideDown 0.4s ease-out;
   min-height: 48px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .header-left {

@@ -34,9 +34,9 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   menuItems = [
     { id: 'inicio', label: 'Home', icon: 'icon-home' },
     { id: 'rutas', label: 'Rutas', icon: 'icon-route' },
+    { id: 'asignaciones', label: 'Recorridos', icon: 'icon-settings' },
     { id: 'registro-conductores', label: 'Conductores', icon: 'icon-user' },
-    { id: 'vehiculos', label: 'Vehículos', icon: 'icon-car' },
-    { id: 'asignaciones', label: 'Recorridos', icon: 'icon-settings' }
+    { id: 'vehiculos', label: 'Vehículos', icon: 'icon-car' }
   ];
 
   constructor(private router: Router) {
@@ -130,7 +130,8 @@ export class MainComponent implements AfterViewInit, OnDestroy {
       // 3. Crear nuevo mapa
       this.previewMap = L.map(container, {
         center: [3.8773, -77.0277],
-        zoom: 13
+        zoom: 13,
+        maxZoom: 18
       });
 
       this.layerNormal = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -157,6 +158,11 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
   toggleMapMode(): void {
     if (!this.previewMap) return;
+
+    // Save current view
+    const center = this.previewMap.getCenter();
+    const zoom = this.previewMap.getZoom();
+
     this.isSatelliteMode = !this.isSatelliteMode;
     if (this.isSatelliteMode) {
       this.previewMap.removeLayer(this.layerNormal);
@@ -165,8 +171,12 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     } else {
       this.previewMap.removeLayer(this.layerSatellite);
       this.layerNormal.addTo(this.previewMap);
-      this.previewMap.setMaxZoom(19);
+      this.previewMap.setMaxZoom(18);
     }
+
+    // Invalidate size without animation and restore view to prevent jump
+    this.previewMap.invalidateSize({ animate: false });
+    this.previewMap.setView(center, Math.min(zoom, this.previewMap.getMaxZoom()), { animate: false });
   }
 
   toggleSidebar() {

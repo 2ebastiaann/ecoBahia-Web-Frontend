@@ -1,138 +1,137 @@
-<div class="page-container">
-  <app-notification-container></app-notification-container>
+<app-notification-container></app-notification-container>
 
-  <!-- HEADER -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1>📍 Gestión de Recorridos</h1>
-        <p class="subtitle">Planifica las operaciones asignando Ruta, Vehículo y Conductor.</p>
-      </div>
+<app-confirm-dialog
+  [isOpen]="showConfirmDialog"
+  title="Finalizar Recorrido"
+  [message]="'¿Deseas finalizar este recorrido? El conductor, vehículo y ruta quedarán disponibles nuevamente.'"
+  confirmText="Finalizar"
+  cancelText="Cancelar"
+  (confirmed)="confirmDeactivate()"
+  (cancelled)="cancelDeactivate()">
+</app-confirm-dialog>
 
-      <button class="btn-primary-action" *ngIf="esAdmin" (click)="openModal()">
-        ➕ Planificar Recorrido
-      </button>
-    </div>
-  </div>
+<div class="assignments-container">
 
-  <!-- TABLA -->
-  <div class="data-card">
+  <div class="assignments-card">
     <div class="card-header">
-      <div class="card-badge"></div>
-      <h2>Recorridos Planificados</h2>
+      <h2>Recorridos</h2>
+
+      <button class="btn-primary" (click)="openModal()" *ngIf="esAdmin">
+        Planificar Recorrido
+      </button>
     </div>
 
     <div class="card-body">
-      <div class="table-container">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Conductor</th>
-              <th>Vehículo</th>
-              <th>Ruta</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let r of recorridos">
-              <td>
-                <div class="info-cell">
-                  <span class="cell-icon">👤</span>
-                  {{ getConductorName(r.perfil_id) }}
-                </div>
-              </td>
-              <td>
-                <div class="info-cell">
-                  <span class="cell-icon">🚙</span>
-                  {{ getVehiculoPlaca(r.vehiculo_id) }}
-                </div>
-              </td>
-              <td>
-                <span class="ruta-badge">{{ getRutaName(r.ruta_id) }}</span>
-              </td>
-              <td>
-                <span class="status-badge" [ngClass]="r.activo ? 'active' : 'inactive'">
-                  {{ r.activo ? '🟢 Activo' : '🔴 No Activo' }}
-                </span>
-              </td>
-              <td class="actions-cell">
-                <button class="action-btn deactivate-btn"
-                        *ngIf="esAdmin && r.activo"
-                        (click)="desactivarRecorrido(r)"
-                        title="Forzar desactivación">
-                  🛑 Finalizar
-                </button>
-              </td>
-            </tr>
+      <table class="assignments-table">
+        <thead>
+          <tr>
+            <th>CONDUCTOR</th>
+            <th>VEHÍCULO</th>
+            <th>RUTA</th>
+            <th>ESTADO</th>
+            <th *ngIf="esAdmin">ACCIONES</th>
+          </tr>
+        </thead>
 
-            <!-- Estado vacío -->
-            <tr *ngIf="recorridos.length === 0">
-              <td colspan="5" class="empty-state">
-                <div class="empty-content">
-                  <span class="empty-icon">📍</span>
-                  <p>No hay recorridos planificados aún.</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <tbody>
+          <tr *ngFor="let r of recorridos">
+            <td>
+              <div class="cell-content">
+                <span class="cell-icon">👤</span>
+                {{ getConductorName(r.perfil_id) }}
+              </div>
+            </td>
+            <td>
+              <div class="cell-content">
+                <span class="cell-icon">🚙</span>
+                {{ getVehiculoPlaca(r) }}
+              </div>
+            </td>
+            <td>
+              <span class="ruta-badge">{{ getRutaName(r.ruta_id) }}</span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="r.activo ? 'active' : 'inactive'">
+                {{ r.activo ? '● Activo' : '● Inactivo' }}
+              </span>
+            </td>
+            <td *ngIf="esAdmin">
+              <button class="btn-deactivate"
+                      *ngIf="r.activo"
+                      (click)="desactivarRecorrido(r)">
+                Finalizar
+              </button>
+            </td>
+          </tr>
+
+          <!-- Estado vacío -->
+          <tr *ngIf="recorridos.length === 0">
+            <td [attr.colspan]="esAdmin ? 5 : 4" class="empty-state">
+              <div class="empty-content">
+                <span class="empty-icon">📍</span>
+                <p>No hay recorridos planificados aún.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
-
-  <!-- MODAL CREAR / EDITAR -->
-  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Planificar Nuevo Recorrido</h2>
-        <button class="close-btn" (click)="closeModal()">×</button>
-      </div>
-
-      <div class="modal-body">
-        <form [formGroup]="formRecorrido" (ngSubmit)="submitRecorrido()">
-
-          <div class="form-group">
-            <label>Conductor</label>
-            <select formControlName="perfil_id" class="form-select">
-              <option value="" disabled selected>Seleccione un conductor...</option>
-              <option *ngFor="let c of conductores" [value]="c.id_usuario">
-                {{ c.nombre }} {{ c.apellido }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Vehículo</label>
-            <select formControlName="vehiculo_id" class="form-select">
-              <option value="" disabled selected>Seleccione un vehículo...</option>
-              <option *ngFor="let v of vehiculos" [value]="v.id || v.id_vehiculo">
-                {{ v.placa }} ({{ v.marca }})
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Ruta</label>
-            <select formControlName="ruta_id" class="form-select">
-              <option value="" disabled selected>Seleccione una ruta...</option>
-              <option *ngFor="let r of rutas" [value]="r.id">
-                {{ r.nombre_ruta }}
-              </option>
-            </select>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
-            <button type="submit" class="btn-submit" [disabled]="formRecorrido.invalid">
-              Registrar Recorrido
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-
 
 </div>
+
+<!-- ============================
+     MODAL FUERA DEL CONTENEDOR
+============================= -->
+<ng-container *ngIf="showModal">
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+
+      <h2>Planificar Nuevo Recorrido</h2>
+
+      <form [formGroup]="formRecorrido" (ngSubmit)="submitRecorrido()">
+
+        <div class="form-group">
+          <label>Conductor</label>
+          <select formControlName="perfil_id">
+            <option value="" disabled selected>Seleccione un conductor...</option>
+            <option *ngFor="let c of conductores" [value]="c.id_usuario">
+              {{ c.nombre }} {{ c.apellido }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Vehículo</label>
+          <select formControlName="vehiculo_id">
+            <option value="" disabled selected>Seleccione un vehículo...</option>
+            <option *ngFor="let v of vehiculos" [value]="v.id || v.id_vehiculo">
+              {{ v.placa }} ({{ v.marca }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ruta</label>
+          <select formControlName="ruta_id">
+            <option value="" disabled selected>Seleccione una ruta...</option>
+            <option *ngFor="let r of rutas" [value]="r.id">
+              {{ r.nombre_ruta }}
+            </option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeModal()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="formRecorrido.invalid">
+            Registrar Recorrido
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</ng-container>
