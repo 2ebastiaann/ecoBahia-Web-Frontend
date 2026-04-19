@@ -24,10 +24,16 @@
             Guardar Ruta
           </button>
 
-          <button class="btn-danger"
+          <button class="btn-secondary"
                   *ngIf="creandoRuta && esAdmin"
                   (click)="limpiarMapa()">
             Limpiar
+          </button>
+
+          <button class="btn-danger"
+                  *ngIf="creandoRuta && esAdmin"
+                  (click)="cancelarCreacion()">
+            Cancelar
           </button>
         </div>
       </div>

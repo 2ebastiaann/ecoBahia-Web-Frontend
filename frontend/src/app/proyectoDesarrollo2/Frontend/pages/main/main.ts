@@ -36,7 +36,7 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     { id: 'rutas', label: 'Rutas', icon: 'icon-route' },
     { id: 'registro-conductores', label: 'Conductores', icon: 'icon-user' },
     { id: 'vehiculos', label: 'Vehículos', icon: 'icon-car' },
-    { id: 'asignaciones', label: 'Asignaciones', icon: 'icon-settings' }
+    { id: 'asignaciones', label: 'Recorridos', icon: 'icon-settings' }
   ];
 
   constructor(private router: Router) {

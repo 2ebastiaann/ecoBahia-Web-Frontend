@@ -30,7 +30,7 @@ export class ApiService {
     return this._perfilId;
   }
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // ======================================================
   // 🚗 VEHÍCULOS (NO SE BORRA NADA)
@@ -103,32 +103,18 @@ export class ApiService {
   }
 
   // ======================================================
-  // 🔗 ASIGNACIONES
+  // 📍 RECORRIDOS (PLANIFICACIÓN LOCAL)
   // ======================================================
 
-  // Conductores - Vehiculos
-  getAsignacionesConductores(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/asignaciones/conductores`);
+  getRecorridos(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/recorridos_locales`);
   }
 
-  asignarConductor(body: { usuario_id: string, vehiculo_id: string }): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/asignaciones/conductores`, body);
+  crearRecorrido(body: { ruta_id: string, vehiculo_id: string, perfil_id: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/recorridos_locales`, body);
   }
 
-  desasignarConductor(id: string): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/asignaciones/conductores/${id}`);
-  }
-
-  // Rutas - Vehiculos
-  getAsignacionesRutas(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/asignaciones/rutas`);
-  }
-
-  asignarRuta(body: { vehiculo_id: string, ruta_id: string }): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/asignaciones/rutas`, body);
-  }
-
-  desasignarRuta(id: string): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/asignaciones/rutas/${id}`);
+  desactivarRecorrido(id: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/recorridos_locales/${id}/desactivar`, {});
   }
 }

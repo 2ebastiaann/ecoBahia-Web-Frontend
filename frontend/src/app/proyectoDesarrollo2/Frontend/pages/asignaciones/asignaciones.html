@@ -1,170 +1,138 @@
-<app-notification-container></app-notification-container>
+<div class="page-container">
+  <app-notification-container></app-notification-container>
 
-<app-confirm-dialog 
-  [isOpen]="showDeleteConfirm"
-  title="Eliminar Asignación"
-  message="¿Deseas eliminar esta asignación? Esta acción no se puede deshacer."
-  confirmText="Eliminar"
-  cancelText="Cancelar"
-  (confirmed)="confirmDelete()"
-  (cancelled)="cancelDelete()">
-</app-confirm-dialog>
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>📍 Gestión de Recorridos</h1>
+        <p class="subtitle">Planifica las operaciones asignando Ruta, Vehículo y Conductor.</p>
+      </div>
 
-<div class="vehicles-container" style="padding-bottom: 5rem;">
-
-  <!-- PRIMERA TARJETA: CONDUCTOR - VEHÍCULO -->
-  <div class="vehicles-card">
-    <div class="card-header">
-      <h2>Asignar Vehículo a Conductor</h2>
-      <button class="btn-primary" (click)="openConductorModal()" *ngIf="esAdmin">
-        Nueva Asignación
+      <button class="btn-primary-action" *ngIf="esAdmin" (click)="openModal()">
+        ➕ Planificar Recorrido
       </button>
-    </div>
-
-    <div class="card-body">
-      <table class="vehicles-table">
-        <thead>
-          <tr>
-            <th>CONDUCTOR</th>
-            <th>VEHÍCULO</th>
-            <th>FECHA ASIGNACIÓN</th>
-            <th *ngIf="esAdmin">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="asignacionesConductores.length === 0">
-            <td [colSpan]="esAdmin ? 4 : 3">No hay vehículo asignado a conductor.</td>
-          </tr>
-          
-          <tr *ngFor="let asig of asignacionesConductores">
-            <td>{{ getConductorName(asig.usuario_id) }}</td>
-            <td>{{ getVehiculoPlaca(asig.vehiculo_id) }}</td>
-            <td>{{ asig.asignado_en | date:'short' }}</td>
-            <td *ngIf="esAdmin">
-              <button class="btn-delete" (click)="deleteConductorAsignacion(asig.id)">
-                Eliminar
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
     </div>
   </div>
 
-  <!-- SEGUNDA TARJETA: RUTA - VEHÍCULO -->
-  <div class="vehicles-card">
+  <!-- TABLA -->
+  <div class="data-card">
     <div class="card-header">
-      <h2>Asignar Vehículo a Ruta</h2>
-      <button class="btn-primary" (click)="openRutaModal()" *ngIf="esAdmin">
-        Nueva Asignación
-      </button>
+      <div class="card-badge"></div>
+      <h2>Recorridos Planificados</h2>
     </div>
 
     <div class="card-body">
-      <table class="vehicles-table">
-        <thead>
-          <tr>
-            <th>VEHÍCULO</th>
-            <th>RUTA</th>
-            <th>FECHA ASIGNACIÓN</th>
-            <th *ngIf="esAdmin">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="asignacionesRutas.length === 0">
-            <td [colSpan]="esAdmin ? 4 : 3">No hay vehículo asignado a ruta.</td>
-          </tr>
-          
-          <tr *ngFor="let asig of asignacionesRutas">
-            <td>{{ getVehiculoPlaca(asig.vehiculo_id) }}</td>
-            <td>{{ getRutaName(asig.ruta_id) }}</td>
-            <td>{{ asig.asignado_en | date:'short' }}</td>
-            <td *ngIf="esAdmin">
-              <button class="btn-delete" (click)="deleteRutaAsignacion(asig.id)">
-                Eliminar
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Conductor</th>
+              <th>Vehículo</th>
+              <th>Ruta</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of recorridos">
+              <td>
+                <div class="info-cell">
+                  <span class="cell-icon">👤</span>
+                  {{ getConductorName(r.perfil_id) }}
+                </div>
+              </td>
+              <td>
+                <div class="info-cell">
+                  <span class="cell-icon">🚙</span>
+                  {{ getVehiculoPlaca(r.vehiculo_id) }}
+                </div>
+              </td>
+              <td>
+                <span class="ruta-badge">{{ getRutaName(r.ruta_id) }}</span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="r.activo ? 'active' : 'inactive'">
+                  {{ r.activo ? '🟢 Activo' : '🔴 No Activo' }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <button class="action-btn deactivate-btn"
+                        *ngIf="esAdmin && r.activo"
+                        (click)="desactivarRecorrido(r)"
+                        title="Forzar desactivación">
+                  🛑 Finalizar
+                </button>
+              </td>
+            </tr>
+
+            <!-- Estado vacío -->
+            <tr *ngIf="recorridos.length === 0">
+              <td colspan="5" class="empty-state">
+                <div class="empty-content">
+                  <span class="empty-icon">📍</span>
+                  <p>No hay recorridos planificados aún.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
+
+  <!-- MODAL CREAR / EDITAR -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Planificar Nuevo Recorrido</h2>
+        <button class="close-btn" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <form [formGroup]="formRecorrido" (ngSubmit)="submitRecorrido()">
+
+          <div class="form-group">
+            <label>Conductor</label>
+            <select formControlName="perfil_id" class="form-select">
+              <option value="" disabled selected>Seleccione un conductor...</option>
+              <option *ngFor="let c of conductores" [value]="c.id_usuario">
+                {{ c.nombre }} {{ c.apellido }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Vehículo</label>
+            <select formControlName="vehiculo_id" class="form-select">
+              <option value="" disabled selected>Seleccione un vehículo...</option>
+              <option *ngFor="let v of vehiculos" [value]="v.id || v.id_vehiculo">
+                {{ v.placa }} ({{ v.marca }})
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Ruta</label>
+            <select formControlName="ruta_id" class="form-select">
+              <option value="" disabled selected>Seleccione una ruta...</option>
+              <option *ngFor="let r of rutas" [value]="r.id">
+                {{ r.nombre_ruta }}
+              </option>
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-submit" [disabled]="formRecorrido.invalid">
+              Registrar Recorrido
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
 
 </div>
-
-
-<!-- ============================
-     MODAL: ASIGNAR CONDUCTOR - VEHÍCULO
-============================= -->
-<ng-container *ngIf="showModalConductor">
-  <div class="modal-overlay" (click)="closeConductorModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <h2>Asignar Conductor a Vehículo</h2>
-      <form [formGroup]="formConductor" (ngSubmit)="submitConductor()">
-
-        <div class="form-group">
-          <label>Conductor</label>
-          <select formControlName="usuario_id">
-            <option value="">Seleccione un conductor</option>
-            <option *ngFor="let c of conductores" [value]="c.id_usuario">
-              {{ c.nombre }} {{ c.apellido }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Vehículo</label>
-          <select formControlName="vehiculo_id">
-            <option value="">Seleccione un vehículo</option>
-            <option *ngFor="let v of vehiculos" [value]="v.id">
-              {{ v.placa }} - {{ v.marca }}
-            </option>
-          </select>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" (click)="closeConductorModal()">Cancelar</button>
-          <button type="submit" class="btn-primary" [disabled]="!formConductor.valid">Asignar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</ng-container>
-
-<!-- ============================
-     MODAL: ASIGNAR VEHÍCULO - RUTA
-============================= -->
-<ng-container *ngIf="showModalRuta">
-  <div class="modal-overlay" (click)="closeRutaModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <h2>Asignar Vehículo a Ruta</h2>
-      <form [formGroup]="formRuta" (ngSubmit)="submitRuta()">
-
-        <div class="form-group">
-          <label>Vehículo</label>
-          <select formControlName="vehiculo_id">
-            <option value="">Seleccione un vehículo</option>
-            <option *ngFor="let v of vehiculos" [value]="v.id">
-              {{ v.placa }} - {{ v.marca }}
-            </option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Ruta</label>
-          <select formControlName="ruta_id">
-            <option value="">Seleccione una ruta</option>
-            <option *ngFor="let r of rutas" [value]="r.id">
-              {{ r.nombre_ruta }}
-            </option>
-          </select>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" (click)="closeRutaModal()">Cancelar</button>
-          <button type="submit" class="btn-primary" [disabled]="!formRuta.valid">Asignar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</ng-container>

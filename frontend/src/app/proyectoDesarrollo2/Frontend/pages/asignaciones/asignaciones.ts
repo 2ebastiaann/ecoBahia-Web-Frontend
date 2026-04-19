@@ -12,7 +12,7 @@ import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-
   standalone: true,
   templateUrl: './asignaciones.html',
   styleUrls: ['./asignaciones.scss'],
-  imports: [CommonModule, ReactiveFormsModule, NotificationContainerComponent, ConfirmDialogComponent]
+  imports: [CommonModule, ReactiveFormsModule, NotificationContainerComponent]
 })
 export class AsignacionesComponent implements OnInit {
 
@@ -20,22 +20,11 @@ export class AsignacionesComponent implements OnInit {
   vehiculos: any[] = [];
   conductores: any[] = [];
   rutas: any[] = [];
-  
-  asignacionesConductores: any[] = [];
-  asignacionesRutas: any[] = [];
+  recorridos: any[] = [];
 
-  // Modals & forms for Conductores-Vehiculos
-  showModalConductor = false;
-  formConductor: FormGroup;
-
-  // Modals & forms for Rutas-Vehiculos
-  showModalRuta = false;
-  formRuta: FormGroup;
-
-  // Delete Confirmations
-  showDeleteConfirm = false;
-  deleteType: 'conductor' | 'ruta' | null = null;
-  idToDelete: string | null = null;
+  // Modal & form
+  showModal = false;
+  formRecorrido: FormGroup;
 
   usuario: any;
   esAdmin = false;
@@ -46,14 +35,10 @@ export class AsignacionesComponent implements OnInit {
     private auth: AuthService,
     private notificationService: NotificationService
   ) {
-    this.formConductor = this.fb.group({
-      usuario_id: ['', Validators.required],
-      vehiculo_id: ['', Validators.required]
-    });
-
-    this.formRuta = this.fb.group({
+    this.formRecorrido = this.fb.group({
+      ruta_id: ['', Validators.required],
       vehiculo_id: ['', Validators.required],
-      ruta_id: ['', Validators.required]
+      perfil_id: ['', Validators.required]
     });
   }
 
@@ -75,140 +60,81 @@ export class AsignacionesComponent implements OnInit {
       next: (res: any) => this.conductores = res || []
     });
 
-    // Rutas request can fail if api of teacher is down, so handled carefully
     this.api.getRutas().subscribe({
       next: (res: any) => this.rutas = res.data || res || [],
-      error: () => this.rutas = [] 
+      error: () => this.rutas = []
     });
 
-    this.loadAsignaciones();
+    this.loadRecorridos();
   }
 
-  loadAsignaciones(): void {
-    this.api.getAsignacionesConductores().subscribe({
-      next: (res: any) => this.asignacionesConductores = res || [],
-      error: () => this.asignacionesConductores = []
-    });
-
-    this.api.getAsignacionesRutas().subscribe({
-      next: (res: any) => this.asignacionesRutas = res || [],
-      error: () => this.asignacionesRutas = []
+  loadRecorridos(): void {
+    this.api.getRecorridos().subscribe({
+      next: (res: any) => this.recorridos = res || [],
+      error: () => this.recorridos = []
     });
   }
 
-  // ====================== CONDUCTORES - VEHICULOS ======================
+  // ====================== MODAL ======================
 
-  openConductorModal(): void {
+  openModal(): void {
     if (!this.esAdmin) return;
-    this.formConductor.reset();
-    this.showModalConductor = true;
+    this.showModal = true;
+    this.formRecorrido.reset();
   }
 
-  closeConductorModal(): void {
-    this.showModalConductor = false;
+  closeModal(): void {
+    this.showModal = false;
+    this.formRecorrido.reset();
   }
 
-  submitConductor(): void {
-    if (this.formConductor.invalid) return;
+  submitRecorrido(): void {
+    if (this.formRecorrido.invalid) return;
 
-    this.api.asignarConductor(this.formConductor.value).subscribe({
+    this.api.crearRecorrido(this.formRecorrido.value).subscribe({
       next: () => {
-        this.notificationService.success('Vehículo asignado a conductor');
-        this.closeConductorModal();
-        this.loadAsignaciones();
+        this.notificationService.success('Recorrido planificado con éxito');
+        this.closeModal();
+        this.loadRecorridos();
       },
-      error: err => {
-        this.notificationService.error(err.error?.error || 'Error al asignar');
+      error: (err: any) => {
+        this.notificationService.error(err.error?.mensaje || 'Error al crear recorrido');
       }
     });
   }
 
-  // ====================== RUTAS - VEHICULOS ======================
+  // ====================== DESACTIVAR ======================
 
-  openRutaModal(): void {
-    if (!this.esAdmin) return;
-    this.formRuta.reset();
-    this.showModalRuta = true;
-  }
-
-  closeRutaModal(): void {
-    this.showModalRuta = false;
-  }
-
-  submitRuta(): void {
-    if (this.formRuta.invalid) return;
-
-    this.api.asignarRuta(this.formRuta.value).subscribe({
-      next: () => {
-        this.notificationService.success('Vehículo asignado a ruta');
-        this.closeRutaModal();
-        this.loadAsignaciones();
-      },
-      error: err => {
-        this.notificationService.error(err.error?.error || 'Error al asignar');
-      }
-    });
-  }
-
-  // ====================== DELETE HANDLING ======================
-
-  deleteConductorAsignacion(id: string): void {
-    if (!this.esAdmin) return;
-    this.deleteType = 'conductor';
-    this.idToDelete = id;
-    this.showDeleteConfirm = true;
-  }
-
-  deleteRutaAsignacion(id: string): void {
-    if (!this.esAdmin) return;
-    this.deleteType = 'ruta';
-    this.idToDelete = id;
-    this.showDeleteConfirm = true;
-  }
-
-  confirmDelete(): void {
-    if (!this.idToDelete || !this.deleteType) return;
-
-    if (this.deleteType === 'conductor') {
-      this.api.desasignarConductor(this.idToDelete).subscribe({
+  desactivarRecorrido(recorrido: any): void {
+    if (!this.esAdmin || !recorrido.activo) return;
+    
+    if (confirm('¿Estás seguro de que deseas forzar la finalización de este recorrido?')) {
+      this.api.desactivarRecorrido(recorrido.id).subscribe({
         next: () => {
-          this.notificationService.success('Asignación eliminada');
-          this.loadAsignaciones();
+          this.notificationService.success('Recorrido finalizado correctamente');
+          this.loadRecorridos();
         },
-        error: () => this.notificationService.error('Error al eliminar asignación')
-      });
-    } else if (this.deleteType === 'ruta') {
-      this.api.desasignarRuta(this.idToDelete).subscribe({
-        next: () => {
-          this.notificationService.success('Asignación eliminada');
-          this.loadAsignaciones();
-        },
-        error: () => this.notificationService.error('Error al eliminar asignación')
+        error: (err: any) => {
+          this.notificationService.error(err.error?.mensaje || 'Error al finalizar recorrido');
+        }
       });
     }
-
-    this.cancelDelete();
   }
 
-  cancelDelete(): void {
-    this.showDeleteConfirm = false;
-    this.deleteType = null;
-    this.idToDelete = null;
-  }
+  // ====================== HELPERS ======================
 
-  // Helpers
   getConductorName(id: string): string {
-    const c = this.conductores.find(x => x.id_usuario === id);
+    const c = this.conductores.find((x: any) => x.id_usuario === id);
     return c ? `${c.nombre} ${c.apellido}` : 'Desconocido';
   }
 
   getVehiculoPlaca(id: string): string {
-    const v = this.vehiculos.find(x => x.id === id);
-    return v ? `${v.placa} (${v.marca})` : id; // fallback a id si falla
+    const v = this.vehiculos.find((x: any) => x.id === id || x.id_vehiculo === id);
+    return v ? `${v.placa} (${v.marca})` : id;
   }
 
   getRutaName(id: string): string {
-    const r = this.rutas.find(x => x.id === id);
+    const r = this.rutas.find((x: any) => x.id === id);
     return r ? r.nombre_ruta : 'Desconocida';
   }
 }

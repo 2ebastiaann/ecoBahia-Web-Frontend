@@ -27,6 +27,7 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
   // Crear rutas manualmente con puntos
   creandoRuta = false;
   puntosRuta: L.LatLng[] = [];
+  coordenadasEnrutadas: L.LatLng[] = [];
   polyline: L.Polyline | null = null;
   marcadores: L.Marker[] = [];
 
@@ -192,6 +193,12 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
     this.limpiarMapa();
   }
 
+  cancelarCreacion(): void {
+    this.creandoRuta = false;
+    this.nombreRuta = '';
+    this.limpiarMapa();
+  }
+
   private onMapClick(e: L.LeafletMouseEvent): void {
     if (!this.creandoRuta || !this.esAdmin) return;
 
@@ -206,8 +213,8 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
 
     this.marcadores.push(marker);
 
-    if (!this.polyline) {
-      this.polyline = L.polyline(this.puntosRuta, {
+    if (this.puntosRuta.length === 1) {
+      this.polyline = L.polyline([], {
         color: '#10b981',
         weight: 4,
         opacity: 0.9,
@@ -216,7 +223,42 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
         lineJoin: 'round'
       }).addTo(this.map);
     } else {
-      this.polyline.setLatLngs(this.puntosRuta);
+      this.trazarRutaPorCalles();
+    }
+  }
+
+  private async trazarRutaPorCalles(): Promise<void> {
+    if (this.puntosRuta.length < 2) return;
+
+    // OSRM espera las coordenadas en formato lng,lat separadas por ';'
+    const coords = this.puntosRuta.map(p => `${p.lng},${p.lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        // La API devuelve geojson en formato [lng, lat]
+        const geojsonCoordinates = data.routes[0].geometry.coordinates;
+
+        // Convertir a L.LatLng para Leaflet
+        this.coordenadasEnrutadas = geojsonCoordinates.map((c: any) => L.latLng(c[1], c[0]));
+
+        if (this.polyline) {
+          this.polyline.setLatLngs(this.coordenadasEnrutadas);
+        }
+      } else {
+        this.notificationService.warning("No se pudo hallar ruta válida por calles.");
+        // Fallback: trazar línea recta
+        this.coordenadasEnrutadas = [...this.puntosRuta];
+        if (this.polyline) this.polyline.setLatLngs(this.coordenadasEnrutadas);
+      }
+    } catch (e) {
+      console.error('Error al calcular ruta: ', e);
+      // Fallback
+      this.coordenadasEnrutadas = [...this.puntosRuta];
+      if (this.polyline) this.polyline.setLatLngs(this.coordenadasEnrutadas);
     }
   }
 
@@ -232,9 +274,13 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
       return;
     }
 
+    const puntosFinales = this.coordenadasEnrutadas.length > 0
+      ? this.coordenadasEnrutadas
+      : this.puntosRuta;
+
     const shape: RutaShape = {
       type: 'LineString',
-      coordinates: this.puntosRuta.map(
+      coordinates: puntosFinales.map(
         (p: L.LatLng): [number, number] => [p.lng, p.lat]
       )
     };
@@ -295,15 +341,20 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
       weight: 5
     }).addTo(this.map);
 
-    // Dibujar puntos
-    coords.forEach((p: L.LatLng) => {
+    // Dibujar puntos (solo inicio y fin para no saturar con los cientos de puntos generados por las calles)
+    if (coords.length > 0) {
       const color = r.color_hex || '#10b981';
       const pinHtml = this.makePinHtml(color, 30);
       const icon = L.divIcon({ html: pinHtml, className: 'route-pin-icon route-pin-svg', iconSize: [30, 30], iconAnchor: [15, 30] });
-      const m = L.marker(p, { icon }).addTo(this.map);
 
-      this.marcadores.push(m);
-    });
+      const mStart = L.marker(coords[0], { icon }).addTo(this.map);
+      this.marcadores.push(mStart);
+
+      if (coords.length > 1) {
+        const mEnd = L.marker(coords[coords.length - 1], { icon }).addTo(this.map);
+        this.marcadores.push(mEnd);
+      }
+    }
 
     setTimeout(() => {
       this.map.invalidateSize();
@@ -317,6 +368,7 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
 
   limpiarMapa(): void {
     this.puntosRuta = [];
+    this.coordenadasEnrutadas = [];
 
     if (this.polyline) {
       this.map.removeLayer(this.polyline);

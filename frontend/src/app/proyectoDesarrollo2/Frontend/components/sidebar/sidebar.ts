@@ -28,7 +28,7 @@ export class SidebarComponent implements OnInit {
   usuario: any = null;
   rolUsuario: string = '';
 
-  constructor(private router: Router, private auth: AuthService) {}
+  constructor(private router: Router, private auth: AuthService) { }
 
   ngOnInit(): void {
     this.usuario = this.auth.obtenerUsuario();
@@ -67,7 +67,7 @@ export class SidebarComponent implements OnInit {
       case 'vehiculos':
         this.router.navigate(['/main', 'vehiculos']);
         break;
-        
+
       case 'registro-conductores':
         this.router.navigate(['/main', 'registro-conductores']);
         break;
