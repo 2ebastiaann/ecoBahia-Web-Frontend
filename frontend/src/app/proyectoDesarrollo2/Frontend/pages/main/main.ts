@@ -200,7 +200,8 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   }
 
   verRutaActiva() {
-    this.router.navigate(['/main', 'mapa']);
+    // temporalmente deshabilitado
+    // this.router.navigate(['/main', 'mapa']);
   }
 
   abrirMapa() {
@@ -208,7 +209,9 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   }
 
   onLogout() {
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    // también remuevo el usuario por si acaso, tal como en el authService
+    sessionStorage.removeItem('usuario');
     this.router.navigate(['/login']);
   }
 }

@@ -31,23 +31,23 @@ export class AuthService {
   }
 
   guardarToken(token: string) {
-    localStorage.setItem('token', token);
+    sessionStorage.setItem('token', token);
   }
 
   guardarUsuario(usuario: any) {
-    localStorage.setItem('usuario', JSON.stringify(usuario));
+    sessionStorage.setItem('usuario', JSON.stringify(usuario));
   }
 
   obtenerToken(): string | null {
-    return localStorage.getItem('token');
+    return sessionStorage.getItem('token');
   }
 
   obtenerUsuario() {
-    return JSON.parse(localStorage.getItem('usuario') || 'null');
+    return JSON.parse(sessionStorage.getItem('usuario') || 'null');
   }
 
   logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('usuario');
   }
 }
