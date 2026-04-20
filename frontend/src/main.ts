@@ -1,6 +1,6 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
-import { App } from './app/proyectoDesarrollo2/Frontend/app';
+import { App } from './app/app';
 
 // Suprimir todos los mensajes de consola peligrosos
 const originalLog = console.log;
