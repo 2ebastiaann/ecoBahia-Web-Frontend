@@ -105,7 +105,7 @@ export class LeafletMapService {
   // ===========================================================
   //    DIBUJAR RUTA CARGADA
   // ===========================================================
-  drawRoute(coords: [number, number][], meta: any) {
+  drawRoute(coords: [number, number][], meta: { id: string; color?: string }) {
     if (!this.map) return;
 
     const latlngs = coords.map(c => L.latLng(c[0], c[1]));
@@ -121,7 +121,7 @@ export class LeafletMapService {
   focusOnRoute(id: string) {
     const layer = this.routesLayers[id];
     if (layer) {
-      this.map!.fitBounds((layer as any).getBounds(), { padding: [50, 50] });
+      this.map!.fitBounds((layer as L.Polyline).getBounds(), { padding: [50, 50] });
     }
   }
 

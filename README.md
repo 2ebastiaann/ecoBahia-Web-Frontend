@@ -1,8 +1,8 @@
-# ♻️ EcoBahía: Sistema de Gestión y Monitoreo de Rutas de Recolección
+# ♻️ EcoBahía: Panel Administrativo (Frontend Web)
 
 ## 🌟 Introducción
 
-**EcoBahía** es una plataforma centralizada y administrativa concebida específicamente para optimizar la logística de recolección de residuos. Está diseñada para mapear, monitorizar y gestionar las rutas y recorridos de los camiones de basura en la entidad u organización.
+**EcoBahía (Panel Administrativo)** es la plataforma centralizada web concebida específicamente para los administradores y coordinadores encargados de optimizar la logística de recolección de residuos. Está diseñada para mapear, monitorizar y gestionar las rutas y recorridos de los camiones de basura en la entidad u organización.
 
 A través de **EcoBahía**, los coordinadores y administradores pueden tener control total sobre sus operaciones logísticas: permite dibujar trayectos precisos usando las calles de la ciudad, mantener un censo riguroso de la flota vehicular y de conductores autorizados, y finalmente, enlazar en tiempo real todo ello para activar y supervisar los **recorridos de recolección georeferenciados**.
 
@@ -58,12 +58,27 @@ c:\Users\LENOVO\ecoBahia\frontend\src\
     │   └── vehiculos/         ← CRUD completo de base de datos para la flota de vehículos.
     │
     └── services/              ← Lógica de negocio, estado global y peticiones HTTP
-        ├── api.service.ts     ← Consume toda la API REST (Backend Express y API del profesor).
         ├── auth.service.ts    ← Gestiona autenticación, login y el token JWT en base al backend.
-        ├── http.interceptor.ts ← Captura y suprime errores nativos de HTTP en la consola de prod.
-        ├── map.service.ts     ← Controla integraciones de Leaflet, pintura de rutas, puntos, capas.
-        └── notification.service.ts ← Inyectable global para emitir mensajes de error o éxito al usuario.
+        ├── http.interceptor.ts ← Inyecta automáticamente el JWT y captura errores.
+        ├── live-tracking.service.ts ← Estado global reactivo para el rastreo en vivo de conductores.
+        ├── map.service.ts     ← Integración de Leaflet, pintura estática de rutas.
+        ├── notification.service.ts ← Inyectable para emitir mensajes (toasts).
+        ├── websocket.service.ts ← Conexión Socket.IO con el backend y escucha de eventos GPS.
+        ├── ruta/
+        │   └── ruta.service.ts ← Endpoints REST para rutas.
+        ├── vehiculo/
+        │   └── vehiculo.service.ts ← Endpoints REST para vehículos.
+        ├── usuario/
+        │   └── usuario.service.ts ← Endpoints REST para usuarios y perfiles.
+        └── recorrido/
+            └── recorrido.service.ts ← Endpoints REST para recorridos locales y foráneos.
 ```
+
+### 📍 Monitoreo y Limpieza Reactiva en Tiempo Real
+La aplicación cuenta con un módulo de **Tracking en Vivo** (Live Tracking) para el monitoreo de la flota:
+1. **`WebSocketService`**: Mantiene un túnel bidireccional con el Backend Node.js. Autentica vía JWT. Escucha eventos crudos `location:update` y `conductor:disconnected`.
+2. **`LiveTrackingService`**: Recibe los eventos del Socket y mantiene un estado en memoria (`BehaviorSubject<Map>`). Si un camión envía su ubicación, la guarda. Si el camión se desconecta o finaliza, lo elimina de memoria al instante.
+3. **Interacción con el Mapa**: En `mapa.ts`, el componente escucha este servicio. Al actualizarse, dibuja los marcadores de los camiones y las polilíneas de la ruta en la que están. Si `LiveTrackingService` elimina un camión, el mapa retira sus componentes gráficos del DOM en milisegundos, garantizando un mapa siempre exacto y limpio.
 
 ### Ejecutar el Proyecto Frontend
 

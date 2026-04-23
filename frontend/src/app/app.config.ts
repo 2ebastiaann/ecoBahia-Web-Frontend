@@ -4,7 +4,7 @@ import { provideHttpClient, withInterceptors, HTTP_INTERCEPTORS } from '@angular
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { routes } from './app.routes';
-import { SilentHttpInterceptor } from './services/http.interceptor';
+import { AuthHttpInterceptor } from './services/http.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -12,7 +12,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(), // <--- registra HttpClient globalmente
-    { provide: HTTP_INTERCEPTORS, useClass: SilentHttpInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: AuthHttpInterceptor, multi: true },
     provideAnimationsAsync() // <--- provee animaciones
   ]
 };

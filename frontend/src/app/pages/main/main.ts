@@ -2,7 +2,8 @@ import { Component, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import * as L from 'leaflet';
-import { filter } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { filter, takeUntil } from 'rxjs/operators';
 
 import { SidebarComponent } from '../../components/sidebar/sidebar';
 import { HeaderComponent } from '../../components/header/header';
@@ -24,12 +25,14 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   private previewMap?: L.Map;
   private mapInitialized = false;
   private mapInitInProgress = false;
-  private mapInitTimeout?: any;
+  private mapInitTimeout?: ReturnType<typeof setTimeout>;
 
   // Manejo de capas
   private layerNormal!: L.TileLayer;
   private layerSatellite!: L.TileLayer;
   public isSatelliteMode = false;
+
+  private readonly destroy$ = new Subject<void>();
 
   menuItems = [
     { id: 'inicio', label: 'Home', icon: 'icon-home' },
@@ -43,7 +46,10 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     this.currentRoute = this.router.url;
 
     this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
       .subscribe((event: NavigationEnd) => {
         this.currentRoute = event.urlAfterRedirects;
 
@@ -68,6 +74,8 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     if (this.mapInitTimeout) {
       clearTimeout(this.mapInitTimeout);
     }
@@ -105,7 +113,7 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     this.mapInitInProgress = true;
 
     try {
-      const container = document.getElementById('mainMapPreview') as any;
+      const container = document.getElementById('mainMapPreview') as HTMLElement | null;
       if (!container) {
         this.mapInitInProgress = false;
         return;
@@ -123,8 +131,9 @@ export class MainComponent implements AfterViewInit, OnDestroy {
       }
 
       // 2. Limpiar referencias de Leaflet en el contenedor
-      if (container._leaflet_id !== undefined) {
-        container._leaflet_id = null;
+      const leafletContainer = container as HTMLElement & { _leaflet_id?: number | null };
+      if (leafletContainer._leaflet_id !== undefined) {
+        leafletContainer._leaflet_id = null;
       }
 
       // 3. Crear nuevo mapa

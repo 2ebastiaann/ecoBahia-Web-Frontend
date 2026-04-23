@@ -1,19 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ApiService } from '../../services/api.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+import { UsuarioService } from '../../services/usuario/usuario.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { NotificationContainerComponent } from '../../components/notification-container/notification-container.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
-
-interface Conductor {
-  id_usuario?: string;
-  email: string;
-  nombre: string;
-  apellido: string;
-}
+import { Conductor, CrearConductorPayload, ActualizarConductorPayload, Usuario } from '../../models';
 
 @Component({
   selector: 'app-registro-conductores',
@@ -22,7 +19,7 @@ interface Conductor {
   styleUrls: ['./registro-conductores.scss'],
   imports: [CommonModule, ReactiveFormsModule, NotificationContainerComponent, ConfirmDialogComponent]
 })
-export class Register implements OnInit {
+export class Register implements OnInit, OnDestroy {
 
   conductores: Conductor[] = [];
   conductorForm: FormGroup;
@@ -33,11 +30,13 @@ export class Register implements OnInit {
   showDeleteConfirm = false;
   conductorToDelete?: Conductor;
 
-  usuario: any;
+  usuario: Usuario | null = null;
   esAdmin = false;
 
+  private readonly destroy$ = new Subject<void>();
+
   constructor(
-    private api: ApiService,
+    private usuarioService: UsuarioService,
     private fb: FormBuilder,
     private router: Router,
     private auth: AuthService,
@@ -61,15 +60,20 @@ export class Register implements OnInit {
     this.loadConductores();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadConductores(): void {
-    this.api.getConductores().subscribe({
-      next: (res: any) => {
-        this.conductores = res || [];
-      },
-      error: err => {
-        console.error("Error loading conductores", err);
-      }
-    });
+    this.usuarioService.getConductores()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (conductores: Conductor[]) => {
+          this.conductores = conductores || [];
+        },
+        error: () => {}
+      });
   }
 
   openAddModal(): void {
@@ -115,18 +119,20 @@ export class Register implements OnInit {
   confirmDelete(): void {
     if (!this.conductorToDelete?.id_usuario) return;
 
-    this.api.eliminarConductor(this.conductorToDelete.id_usuario).subscribe({
-      next: () => {
-        this.notificationService.success('Conductor eliminado');
-        this.showDeleteConfirm = false;
-        this.conductorToDelete = undefined;
-        this.loadConductores();
-      },
-      error: err => {
-        this.notificationService.error('Error al eliminar conductor');
-        this.showDeleteConfirm = false;
-      }
-    });
+    this.usuarioService.eliminarConductor(this.conductorToDelete.id_usuario)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.notificationService.success('Conductor eliminado');
+          this.showDeleteConfirm = false;
+          this.conductorToDelete = undefined;
+          this.loadConductores();
+        },
+        error: () => {
+          this.notificationService.error('Error al eliminar conductor');
+          this.showDeleteConfirm = false;
+        }
+      });
   }
 
   cancelDelete(): void {
@@ -152,47 +158,61 @@ export class Register implements OnInit {
     }
 
     const value = this.conductorForm.value;
-    const data: any = {
-      nombre: value.nombre,
-      apellido: value.apellido,
-      email: value.email
-    };
-    
-    // Only send password if it has value (important for edits)
-    if (value.password && value.password.trim() !== '') {
-      data.password = value.password;
-    }
 
     // EDITAR CONDUCTOR
     if (this.isEditMode && this.selectedConductor?.id_usuario) {
-      this.api.actualizarConductor(this.selectedConductor.id_usuario, data).subscribe({
-        next: () => {
-          this.notificationService.success('Conductor actualizado');
-          this.closeModal();
-          this.loadConductores();
-        },
-      error: err => {
-        console.error("Error editando:", err);
-        const errorMsg = err.error?.error || 'Error al actualizar conductor';
-        this.notificationService.error(errorMsg);
+      const updateData: ActualizarConductorPayload = {
+        nombre: value.nombre,
+        apellido: value.apellido,
+        email: value.email,
+      };
+
+      // Only send password if it has value (important for edits)
+      if (value.password && value.password.trim() !== '') {
+        updateData.password = value.password;
       }
-      });
+
+      this.usuarioService.actualizarConductor(this.selectedConductor.id_usuario, updateData)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.notificationService.success('Conductor actualizado');
+            this.closeModal();
+            this.loadConductores();
+          },
+          error: (err) => {
+            const errorMsg = err.error?.error || 'Error al actualizar conductor';
+            this.notificationService.error(errorMsg);
+          }
+        });
       return;
     }
 
     // CREAR CONDUCTOR
     if (!this.esAdmin) return;
 
-    this.api.crearConductor(data).subscribe({
-      next: () => {
-        this.notificationService.success('Conductor registrado exitosamente');
-        this.closeModal();
-        this.loadConductores();
-      },
-      error: err => {
-        const errorMsg = err.error?.error || 'Error al registrar conductor';
-        this.notificationService.error(errorMsg);
-      }
-    });
+    const createData: CrearConductorPayload = {
+      nombre: value.nombre,
+      apellido: value.apellido,
+      email: value.email,
+    };
+
+    if (value.password && value.password.trim() !== '') {
+      createData.password = value.password;
+    }
+
+    this.usuarioService.crearConductor(createData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.notificationService.success('Conductor registrado exitosamente');
+          this.closeModal();
+          this.loadConductores();
+        },
+        error: (err) => {
+          const errorMsg = err.error?.error || 'Error al registrar conductor';
+          this.notificationService.error(errorMsg);
+        }
+      });
   }
 }

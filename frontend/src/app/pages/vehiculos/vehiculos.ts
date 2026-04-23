@@ -1,21 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ApiService } from '../../services/api.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+import { VehiculoService } from '../../services/vehiculo/vehiculo.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { NotificationContainerComponent } from '../../components/notification-container/notification-container.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
-import { environment } from '../../../environments/environment';
-
-interface Vehiculo {
-  id?: string;
-  placa: string;
-  marca: string;
-  modelo: string;
-  activo: boolean;
-}
+import { Vehiculo, Usuario } from '../../models';
 
 @Component({
   selector: 'app-vehiculos',
@@ -24,7 +19,7 @@ interface Vehiculo {
   styleUrls: ['./vehiculos.scss'],
   imports: [CommonModule, ReactiveFormsModule, NotificationContainerComponent, ConfirmDialogComponent]
 })
-export class VehiculosComponent implements OnInit {
+export class VehiculosComponent implements OnInit, OnDestroy {
 
   vehicles: Vehiculo[] = [];
   vehicleForm: FormGroup;
@@ -35,15 +30,15 @@ export class VehiculosComponent implements OnInit {
   showDeleteConfirm = false;
   vehicleToDelete?: Vehiculo;
 
-  usuario: any;
+  usuario: Usuario | null = null;
   esAdmin = false;
   esConductor = false;
   esUsuario = false;
 
-  PERFIL_ID = environment.PERFIL_ID; // usado para crear vehículos
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private api: ApiService,
+    private vehiculoService: VehiculoService,
     private fb: FormBuilder,
     private router: Router,
     private auth: AuthService,
@@ -69,13 +64,20 @@ export class VehiculosComponent implements OnInit {
     this.loadVehicles();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadVehicles(): void {
-    this.api.getVehiculos().subscribe({
-      next: (res: any) => {
-        this.vehicles = res.data || [];
-      },
-      error: err => {}
-    });
+    this.vehiculoService.getVehiculosList()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (vehicles: Vehiculo[]) => {
+          this.vehicles = vehicles;
+        },
+        error: () => {}
+      });
   }
 
   openAddModal(): void {
@@ -109,18 +111,20 @@ export class VehiculosComponent implements OnInit {
   confirmDelete(): void {
     if (!this.vehicleToDelete?.id) return;
 
-    this.api.eliminarVehiculo(this.vehicleToDelete.id).subscribe({
-      next: () => {
-        this.notificationService.success('Vehículo eliminado');
-        this.showDeleteConfirm = false;
-        this.vehicleToDelete = undefined;
-        this.loadVehicles();
-      },
-      error: err => {
-        this.notificationService.error('Error al eliminar vehículo');
-        this.showDeleteConfirm = false;
-      }
-    });
+    this.vehiculoService.eliminarVehiculo(this.vehicleToDelete.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.notificationService.success('Vehículo eliminado');
+          this.showDeleteConfirm = false;
+          this.vehicleToDelete = undefined;
+          this.loadVehicles();
+        },
+        error: () => {
+          this.notificationService.error('Error al eliminar vehículo');
+          this.showDeleteConfirm = false;
+        }
+      });
   }
 
   cancelDelete(): void {
@@ -136,40 +140,40 @@ export class VehiculosComponent implements OnInit {
   onSubmit(): void {
     if (this.vehicleForm.invalid) return;
 
-    const data = {
-      ...this.vehicleForm.value,
-      perfil_id: this.PERFIL_ID   // 🔥 NECESARIO PARA QUE EL BACKEND PERMITA CREAR VEHÍCULOS
-    };
+    const data = this.vehicleForm.value;
 
     // EDITAR VEHÍCULO
     if (this.isEditMode && this.selectedVehicle?.id) {
-      this.api.actualizarVehiculo(this.selectedVehicle.id, data).subscribe({
-        next: () => {
-          this.notificationService.success('Vehículo actualizado');
-          this.closeModal();
-          this.loadVehicles();
-        },
-      error: err => {
-        console.error("Error editando:", err);
-        this.notificationService.error('Error al actualizar vehículo');
-      }
-      });
+      this.vehiculoService.actualizarVehiculo(this.selectedVehicle.id, data)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.notificationService.success('Vehículo actualizado');
+            this.closeModal();
+            this.loadVehicles();
+          },
+          error: () => {
+            this.notificationService.error('Error al actualizar vehículo');
+          }
+        });
       return;
     }
 
     // CREAR VEHÍCULO
     if (!this.esAdmin && !this.esConductor) return;
 
-    this.api.crearVehiculo(data).subscribe({
-      next: () => {
-        this.notificationService.success('Vehículo creado exitosamente');
-        this.closeModal();
-        this.loadVehicles();
-      },
-      error: err => {
-        this.notificationService.error('Error al crear vehículo');
-      }
-    });
+    this.vehiculoService.crearVehiculo(data)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.notificationService.success('Vehículo creado exitosamente');
+          this.closeModal();
+          this.loadVehicles();
+        },
+        error: () => {
+          this.notificationService.error('Error al crear vehículo');
+        }
+      });
   }
 
   goToMain(): void {

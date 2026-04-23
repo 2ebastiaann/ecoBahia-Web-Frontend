@@ -2,16 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-
-interface LoginResponse {
-  ok: boolean;
-  token: string;
-  usuario: {
-    id_usuario: string;
-    email: string;
-    id_rol: number;
-  };
-}
+import { Usuario, LoginResponse, RegisterResponse } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -26,15 +17,15 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email, password });
   }
 
-  register(email: string, password: string, id_rol: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/register`, { email, password, id_rol });
+  register(email: string, password: string, id_rol: number): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.apiUrl}/register`, { email, password, id_rol });
   }
 
-  guardarToken(token: string) {
+  guardarToken(token: string): void {
     sessionStorage.setItem('token', token);
   }
 
-  guardarUsuario(usuario: any) {
+  guardarUsuario(usuario: Usuario): void {
     sessionStorage.setItem('usuario', JSON.stringify(usuario));
   }
 
@@ -42,11 +33,17 @@ export class AuthService {
     return sessionStorage.getItem('token');
   }
 
-  obtenerUsuario() {
-    return JSON.parse(sessionStorage.getItem('usuario') || 'null');
+  obtenerUsuario(): Usuario | null {
+    const raw = sessionStorage.getItem('usuario');
+    if (!raw) return null;
+    return JSON.parse(raw) as Usuario;
   }
 
-  logout() {
+  estaAutenticado(): boolean {
+    return !!this.obtenerToken();
+  }
+
+  logout(): void {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('usuario');
   }

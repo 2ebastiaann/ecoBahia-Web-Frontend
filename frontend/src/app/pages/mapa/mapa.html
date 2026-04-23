@@ -73,7 +73,7 @@
           <div class="ruta-info">
             <div class="ruta-name">{{ r.nombre_ruta }}</div>
             <div class="ruta-points">
-              {{ (r.shape?.coordinates?.length || 0) }} {{ ((r.shape?.coordinates?.length || 0) === 1) ? 'punto' : 'puntos' }}
+              {{ (r.shape.coordinates.length || 0) }} {{ (r.shape.coordinates.length === 1) ? 'punto' : 'puntos' }}
             </div>
           </div>
           <div class="ruta-actions">

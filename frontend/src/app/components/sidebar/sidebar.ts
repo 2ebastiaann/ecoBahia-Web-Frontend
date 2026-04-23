@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { Usuario } from '../../models';
 
 interface MenuItem {
   id: string;
@@ -25,7 +26,7 @@ export class SidebarComponent implements OnInit {
   @Output() sectionChange = new EventEmitter<string>();
   @Output() logoutClick = new EventEmitter<void>();
 
-  usuario: any = null;
+  usuario: Usuario | null = null;
   rolUsuario: string = '';
 
   constructor(private router: Router, private auth: AuthService) { }

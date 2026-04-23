@@ -3,11 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
-import { ApiService, RutaShape, CrearRutaPayload } from '../../services/api.service';
+import { RutaService } from '../../services/ruta/ruta.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { NotificationContainerComponent } from '../../components/notification-container/notification-container.component';
+import { RutaProcesada, RutaShape, CrearRutaPayload, Usuario, Recorrido } from '../../models';
+import { LiveTrackingService } from '../../services/live-tracking.service';
+import { RecorridoService } from '../../services/recorrido/recorrido.service';
 
 @Component({
   selector: 'app-mapa',
@@ -30,20 +35,30 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
   coordenadasEnrutadas: L.LatLng[] = [];
   polyline: L.Polyline | null = null;
   marcadores: L.Marker[] = [];
+  
+  // Real-time tracking
+  private truckMarkers: { [conductorId: string]: L.Marker } = {};
+  private activeRoutesPolylines: { [rutaId: string]: L.LayerGroup } = {};
+  
+  recorridos: Recorrido[] = [];
 
   // rutas cargadas
-  rutas: any[] = [];
-  rutaSeleccionada: any = null;
+  rutas: RutaProcesada[] = [];
+  rutaSeleccionada: RutaProcesada | null = null;
 
-  usuario: any;
+  usuario: Usuario | null = null;
   esAdmin = false;
 
+  private readonly destroy$ = new Subject<void>();
+
   constructor(
-    private api: ApiService,
+    private rutaService: RutaService,
     public router: Router,
     private route: ActivatedRoute,
     private auth: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private liveTrackingService: LiveTrackingService,
+    private recorridoService: RecorridoService
   ) {}
 
   // ===================================================
@@ -57,14 +72,23 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
     }
 
     this.cargarRutas();
+    this.cargarRecorridos();
+    this.liveTrackingService.iniciarMonitoreo();
   }
 
   ngAfterViewInit(): void {
     this.initMap();
     setTimeout(() => this.map.invalidateSize(), 200);
+    this.escucharCamiones();
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    // No detenemos el monitoreo global para no perder la memoria de camiones activos,
+    // pero sí debemos limpiar las referencias a los objetos del mapa local destruido.
+    this.truckMarkers = {};
+    this.activeRoutesPolylines = {};
     if (this.map) this.map.remove();
   }
 
@@ -134,43 +158,155 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
     return svg;
   }
 
+  // Genera HTML SVG para el pin del camión recolector
+  private makeTruckPinHtml(): string {
+    return `
+      <div style="background-color: #f9a03f; border: 2px solid white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.3s ease;">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
+          <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+        </svg>
+      </div>
+    `;
+  }
+
+  // ===================================================
+  // Tracking en Tiempo Real
+  // ===================================================
+
+  private escucharCamiones(): void {
+    this.liveTrackingService.activeTrucks$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((trucksMap) => {
+        if (!this.map) return;
+
+        // 1. Eliminar camiones que ya no están activos
+        Object.keys(this.truckMarkers).forEach(conductorId => {
+          if (!trucksMap.has(conductorId)) {
+            this.map.removeLayer(this.truckMarkers[conductorId]);
+            delete this.truckMarkers[conductorId];
+          }
+        });
+
+        // 2. Determinar rutas necesarias y eliminar las sobrantes
+        const rutasActivasActuales = new Set<string>();
+
+        trucksMap.forEach((data, conductorId) => {
+          const latlng = L.latLng(data.latitude, data.longitude);
+          
+          if (!this.truckMarkers[conductorId]) {
+            // Crear nuevo camión
+            const iconHtml = this.makeTruckPinHtml();
+            const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+            const marker = L.marker(latlng, { icon, zIndexOffset: 1000 }).addTo(this.map);
+            this.truckMarkers[conductorId] = marker;
+          } else {
+            // Actualizar posición del camión existente
+            this.truckMarkers[conductorId].setLatLng(latlng);
+          }
+          
+          // Dibujar la ruta asignada si no está dibujada
+          if (data.recorrido_id) {
+            const recorrido = this.recorridos.find(r => String(r.id) === String(data.recorrido_id));
+            if (recorrido) {
+              rutasActivasActuales.add(String(recorrido.ruta_id));
+              this.dibujarRutaActiva(data.recorrido_id);
+            }
+          }
+        });
+
+        // 3. Limpiar rutas que ya ningún camión está recorriendo
+        Object.keys(this.activeRoutesPolylines).forEach(rutaId => {
+          if (!rutasActivasActuales.has(rutaId)) {
+            this.map.removeLayer(this.activeRoutesPolylines[rutaId]);
+            delete this.activeRoutesPolylines[rutaId];
+          }
+        });
+      });
+  }
+
+  private dibujarRutaActiva(recorridoId: string): void {
+    if (!this.recorridos.length || !this.rutas.length || !this.map) return;
+
+    const recorrido = this.recorridos.find(r => String(r.id) === String(recorridoId));
+    if (!recorrido) return;
+
+    const rutaId = String(recorrido.ruta_id);
+    
+    // Si la ruta ya está dibujada (en activeRoutesPolylines), no hacer nada
+    if (this.activeRoutesPolylines[rutaId]) return;
+
+    const ruta = this.rutas.find(r => String(r.id) === rutaId);
+    if (!ruta || !ruta.shape?.coordinates) return;
+
+    const coords = ruta.shape.coordinates.map(
+      (c: [number, number]) => L.latLng(c[1], c[0])
+    );
+
+    const layerGroup = L.layerGroup().addTo(this.map);
+
+    const polyline = L.polyline(coords, {
+      color: ruta.color_hex || '#10b981',
+      weight: 5
+    }).addTo(layerGroup);
+
+    if (coords.length > 0) {
+      const color = ruta.color_hex || '#10b981';
+      const pinHtml = this.makePinHtml(color, 30);
+      const icon = L.divIcon({ html: pinHtml, className: 'route-pin-icon route-pin-svg', iconSize: [30, 30], iconAnchor: [15, 30] });
+
+      L.marker(coords[0], { icon }).addTo(layerGroup);
+      if (coords.length > 1) {
+        L.marker(coords[coords.length - 1], { icon }).addTo(layerGroup);
+      }
+    }
+
+    this.activeRoutesPolylines[rutaId] = layerGroup;
+  }
+
   // ===================================================
   // Cargar rutas desde API
   // ===================================================
 
   private cargarRutas(): void {
-    this.api.getRutas().subscribe({
-      next: (resp: any) => {
-        const lista = Array.isArray(resp?.data) ? resp.data : resp;
+    this.rutaService.getRutasProcesadas()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (rutas: RutaProcesada[]) => {
+          this.rutas = rutas;
+          this.redrawActiveTruckRoutes();
+        },
+        error: () => {}
+      });
+  }
 
-        this.rutas = lista.map((r: any) => {
-          let shape = typeof r.shape === 'string' ? JSON.parse(r.shape) : r.shape;
-          
-          // ⚠️ El backend transforma LineString a MultiLineString
-          // Si es MultiLineString, extraer las coordenadas correctamente
-          if (shape.type === 'MultiLineString' && shape.coordinates.length > 0) {
-            // MultiLineString: coordinates = [ [line1], [line2], ... ]
-            // Concatenar todas las líneas en una sola
-            const allCoords: [number, number][] = [];
-            shape.coordinates.forEach((line: [number, number][]) => {
-              allCoords.push(...line);
-            });
-            shape = {
-              type: 'LineString',
-              coordinates: allCoords
-            };
-          }
-          
-          return {
-            ...r,
-            shape: shape
-          };
-        });
-        
+  private cargarRecorridos(): void {
+    this.recorridoService.getRecorridos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (recorridos) => {
+          this.recorridos = recorridos;
+          this.redrawActiveTruckRoutes();
+        },
+        error: () => {}
+      });
+  }
 
-      },
-      error: (err: any) => {}
-    });
+  // Se llama cuando rutas o recorridos terminan de cargar, para repintar las rutas de los camiones activos
+  // que pudieron haber sido omitidas porque los datos no estaban listos
+  private redrawActiveTruckRoutes(): void {
+    // Si todavía no tenemos ambos, no hacemos nada
+    if (!this.rutas.length || !this.recorridos.length) return;
+    
+    // Obtener los camiones activos actuales del servicio
+    // y forzar el dibujado de sus rutas
+    const activeMap = (this.liveTrackingService as any).activeTrucksSubj?.value;
+    if (activeMap) {
+      activeMap.forEach((data: any) => {
+        if (data.recorrido_id) {
+          this.dibujarRutaActiva(data.recorrido_id);
+        }
+      });
+    }
   }
 
   // ===================================================
@@ -238,14 +374,14 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
 
     try {
       const response = await fetch(url);
-      const data = await response.json();
+      const data: { code: string; routes: { geometry: { coordinates: [number, number][] } }[] } = await response.json();
 
       if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
         // La API devuelve geojson en formato [lng, lat]
         const geojsonCoordinates = data.routes[0].geometry.coordinates;
 
         // Convertir a L.LatLng para Leaflet
-        this.coordenadasEnrutadas = geojsonCoordinates.map((c: any) => L.latLng(c[1], c[0]));
+        this.coordenadasEnrutadas = geojsonCoordinates.map((c: [number, number]) => L.latLng(c[1], c[0]));
 
         if (this.polyline) {
           this.polyline.setLatLngs(this.coordenadasEnrutadas);
@@ -257,7 +393,6 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
         if (this.polyline) this.polyline.setLatLngs(this.coordenadasEnrutadas);
       }
     } catch (e) {
-      console.error('Error al calcular ruta: ', e);
       // Fallback
       this.coordenadasEnrutadas = [...this.puntosRuta];
       if (this.polyline) this.polyline.setLatLngs(this.coordenadasEnrutadas);
@@ -288,43 +423,45 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
     };
 
     const payload: CrearRutaPayload = {
-      perfil_id: this.api.perfilId,
+      perfil_id: this.rutaService.getPerfilId(),
       nombre_ruta: this.nombreRuta,
       color_hex: '#10b981',
       shape
     };
 
-    this.api.crearRuta(payload).subscribe({
-      next: () => {
-        this.notificationService.success("Ruta creada exitosamente ✓");
-        
-        // Guardar la ruta recién creada en memoria para mostrarla sin esperar GET
-        const rutaLocal = {
-          nombre_ruta: this.nombreRuta,
-          color_hex: '#10b981',
-          shape: shape,
-          id: Date.now().toString() // ID temporal
-        };
-        
-        this.rutas.push(rutaLocal);
-        this.creandoRuta = false;
-        this.nombreRuta = '';
-        this.limpiarMapa();
-        
-        // Recargar desde el servidor (para actualizaciones de otros usuarios)
-        setTimeout(() => this.cargarRutas(), 1000);
-      },
-      error: (err: any) => {
-        this.notificationService.error("Error al guardar la ruta");
-      }
-    });
+    this.rutaService.crearRuta(payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.notificationService.success("Ruta creada exitosamente ✓");
+          
+          // Guardar la ruta recién creada en memoria para mostrarla sin esperar GET
+          const rutaLocal: RutaProcesada = {
+            nombre_ruta: this.nombreRuta,
+            color_hex: '#10b981',
+            shape: shape,
+            id: Date.now().toString() // ID temporal
+          };
+          
+          this.rutas.push(rutaLocal);
+          this.creandoRuta = false;
+          this.nombreRuta = '';
+          this.limpiarMapa();
+          
+          // Recargar desde el servidor (para actualizaciones de otros usuarios)
+          setTimeout(() => this.cargarRutas(), 1000);
+        },
+        error: () => {
+          this.notificationService.error("Error al guardar la ruta");
+        }
+      });
   }
 
   // ===================================================
   // Ver ruta
   // ===================================================
 
-  mostrarRuta(r: any): void {
+  mostrarRuta(r: RutaProcesada): void {
     if (!r.shape?.coordinates || r.shape.coordinates.length < 2) {
       this.notificationService.error("Ruta dañada o incompleta.");
       return;
@@ -379,5 +516,9 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
 
     this.marcadores.forEach(m => this.map.removeLayer(m));
     this.marcadores = [];
+    
+    // Limpiar rutas de tracking activo (si el usuario limpia el mapa manualmente)
+    Object.values(this.activeRoutesPolylines).forEach(lg => this.map.removeLayer(lg));
+    this.activeRoutesPolylines = {};
   }
 }

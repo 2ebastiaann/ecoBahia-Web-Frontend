@@ -10,26 +10,34 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Injectable()
-export class SilentHttpInterceptor implements HttpInterceptor {
+export class AuthHttpInterceptor implements HttpInterceptor {
+
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    return next.handle(request).pipe(
+    // Inyectar token de autenticación si existe
+    const token = sessionStorage.getItem('token');
+    let authReq = request;
+
+    if (token) {
+      authReq = request.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    }
+
+    return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
-        // Para errores 4xx/5xx, suprimir la visualización en DevTools
-        // No llamamos a throwError inmediatamente, sino que lo hacemos después
-        // de suprimir los logs del navegador
-        
-        // Crear un error nuevo sin exponer detalles en consola
+        // Crear error silenciado sin exponer detalles en consola
         const silentError = new HttpErrorResponse({
-          error: null,
+          error: error.error,       // Preservar body para manejo en componentes
           headers: error.headers,
           status: error.status,
           statusText: error.statusText,
           url: error.url || undefined,
         });
-        
+
         return throwError(() => silentError);
       })
     );
   }
 }
-

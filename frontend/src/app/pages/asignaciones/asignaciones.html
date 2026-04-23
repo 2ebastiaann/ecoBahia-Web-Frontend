@@ -51,9 +51,16 @@
               <span class="ruta-badge">{{ getRutaName(r.ruta_id) }}</span>
             </td>
             <td>
-              <span class="status-badge" [ngClass]="r.activo ? 'active' : 'inactive'">
-                {{ r.activo ? '● Activo' : '● Inactivo' }}
-              </span>
+              <ng-container *ngIf="isRecorridoEnCurso(r.id); else staticState">
+                <span class="status-badge active" style="background-color: #3b82f6; color: white; animation: pulse 2s infinite;">
+                  📍 En Curso
+                </span>
+              </ng-container>
+              <ng-template #staticState>
+                <span class="status-badge" [ngClass]="r.activo ? 'active' : 'inactive'">
+                  {{ r.activo ? '● Activo' : '● Inactivo' }}
+                </span>
+              </ng-template>
             </td>
             <td *ngIf="esAdmin">
               <button class="btn-deactivate"
@@ -105,7 +112,7 @@
           <label>Vehículo</label>
           <select formControlName="vehiculo_id">
             <option value="" disabled selected>Seleccione un vehículo...</option>
-            <option *ngFor="let v of vehiculos" [value]="v.id || v.id_vehiculo">
+            <option *ngFor="let v of vehiculos" [value]="v.id">
               {{ v.placa }} ({{ v.marca }})
             </option>
           </select>
