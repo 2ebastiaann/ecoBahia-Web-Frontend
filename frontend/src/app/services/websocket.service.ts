@@ -41,6 +41,7 @@ export class WebSocketService {
     
     // Escuchar actualizaciones de ubicación enviadas por los conductores
     this.socket.on('location:update', (data: TrackingData) => {
+      console.log('📡 [Web WebSocket] Posición recibida del conductor:', data);
       this.locationUpdateSubj.next(data);
     });
 
