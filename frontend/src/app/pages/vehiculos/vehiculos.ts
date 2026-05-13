@@ -170,8 +170,17 @@ export class VehiculosComponent implements OnInit, OnDestroy {
           this.closeModal();
           this.loadVehicles();
         },
-        error: () => {
-          this.notificationService.error('Error al crear vehículo');
+        error: (err) => {
+          console.error('Error crear vehículo:', err.status, err.error);
+          // El backend EcoBahía usa { mensaje: '...' }, otros pueden usar { message: '...' }
+          const mensaje = err?.error?.mensaje || err?.error?.message;
+          if (err?.status === 409 && mensaje) {
+            this.notificationService.error(mensaje);
+          } else if (mensaje) {
+            this.notificationService.error(mensaje);
+          } else {
+            this.notificationService.error('Error al crear vehículo. Inténtalo de nuevo.');
+          }
         }
       });
   }

@@ -32,32 +32,56 @@
 
           <!-- Info cards row -->
           <div class="info-cards-row">
-            <!-- Rutas activas -->
+
+            <!-- Recorridos activos -->
             <div class="info-card">
               <div class="info-card-header">
-                <h3>Rutas activas</h3>
+                <h3>🚛 Recorridos Activos</h3>
               </div>
               <div class="info-card-body">
-                <p class="info-placeholder">Sin rutas activas en este momento</p>
+                <p class="info-placeholder" *ngIf="activeRecorridos.length === 0">
+                  Sin recorridos activos en este momento
+                </p>
+                <ul class="reporte-list" *ngIf="activeRecorridos.length > 0">
+                  <li class="reporte-item" *ngFor="let r of activeRecorridos">
+                    <span class="reporte-tipo conductor">🚛</span>
+                    <span class="reporte-msg">
+                      <strong>{{ r.rutaNombre }}</strong><br>
+                      <small>{{ r.placa }} · {{ r.conductor }}</small>
+                    </span>
+                  </li>
+                </ul>
               </div>
               <div class="info-card-footer">
-                <button class="link-btn" (click)="verRutaActiva()">Ver más...</button>
+                <button class="link-btn" (click)="verRutaActiva()">Ver en mapa ↓</button>
               </div>
             </div>
 
-            <!-- Progreso de rutas -->
+
+            <!-- Reportes -->
             <div class="info-card">
               <div class="info-card-header">
-                <h3>Progreso de rutas</h3>
+                <h3>📋 Reportes</h3>
               </div>
               <div class="info-card-body">
-                <p class="info-placeholder">No hay recorridos en progreso</p>
+                <p class="info-placeholder" *ngIf="reportes.length === 0">Sin reportes recientes</p>
+                <ul class="reporte-list" *ngIf="reportes.length > 0">
+                  <li class="reporte-item" *ngFor="let r of reportes | slice:0:4">
+                    <span class="reporte-tipo" [class.ciudadano]="r.tipo === 'ciudadano'" [class.conductor]="r.tipo === 'conductor'">
+                      {{ r.tipo === 'ciudadano' ? '👤' : '🚛' }}
+                    </span>
+                    <span class="reporte-msg">{{ r.mensaje }}</span>
+                    <span class="reporte-fecha">{{ r.fecha | date:'HH:mm' }}</span>
+                  </li>
+                </ul>
               </div>
               <div class="info-card-footer">
-                <button class="link-btn" (click)="verRutaActiva()">Ver más...</button>
+                <button class="link-btn" (click)="verReportes()">Ver todos...</button>
               </div>
             </div>
+
           </div>
+
 
           <!-- Mapa -->
           <div class="map-card">

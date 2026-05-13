@@ -7,6 +7,11 @@ import { filter, takeUntil } from 'rxjs/operators';
 
 import { SidebarComponent } from '../../components/sidebar/sidebar';
 import { HeaderComponent } from '../../components/header/header';
+import { LiveTrackingService } from '../../services/live-tracking.service';
+import { RecorridoService } from '../../services/recorrido/recorrido.service';
+import { VehiculoService } from '../../services/vehiculo/vehiculo.service';
+import { RutaService } from '../../services/ruta/ruta.service';
+import { Recorrido, Vehiculo, RutaProcesada } from '../../models';
 
 @Component({
   selector: 'app-main',
@@ -19,20 +24,34 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
   sidebarOpen = true;
   activeSection = 'inicio';
-
   currentRoute = '';
 
   private previewMap?: L.Map;
   private mapInitialized = false;
   private mapInitInProgress = false;
   private mapInitTimeout?: ReturnType<typeof setTimeout>;
+  private dataPollingInterval?: ReturnType<typeof setInterval>;
 
-  // Manejo de capas
+  // Capas
   private layerNormal!: L.TileLayer;
   private layerSatellite!: L.TileLayer;
   public isSatelliteMode = false;
 
+  // Tracking en tiempo real
+  private truckMarkers: { [conductorId: string]: L.Marker } = {};
+  private activeRoutesPolylines: { [rutaId: string]: L.LayerGroup } = {};
+  private rutas: RutaProcesada[] = [];
+  private recorridos: Recorrido[] = [];
+  private vehiculos: Vehiculo[] = [];
+  public activeTruckCount = 0;
+  public activeRecorridos: { rutaNombre: string; placa: string; conductor: string }[] = [];
+
+  // Reportes
+  public reportes: { tipo: 'ciudadano' | 'conductor'; mensaje: string; fecha: Date }[] = [];
+
   private readonly destroy$ = new Subject<void>();
+  /** Subject separado para la suscripción de tracking — se reinicia al re-crear el mapa */
+  private readonly trackingDestroy$ = new Subject<void>();
 
   menuItems = [
     { id: 'inicio', label: 'Home', icon: 'icon-home' },
@@ -42,7 +61,13 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     { id: 'vehiculos', label: 'Vehículos', icon: 'icon-car' }
   ];
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    private liveTrackingService: LiveTrackingService,
+    private recorridoService: RecorridoService,
+    private vehiculoService: VehiculoService,
+    private rutaService: RutaService
+  ) {
     this.currentRoute = this.router.url;
 
     this.router.events
@@ -71,14 +96,29 @@ export class MainComponent implements AfterViewInit, OnDestroy {
         this.initPreviewMap();
       }
     }, 100);
+    // Precarga datos para el tracking y configura polling
+    this.liveTrackingService.iniciarMonitoreo();
+    this.cargarDatosTracking();
+    
+    // Polling cada 10 segundos para saber si algún recorrido finalizó o empezó
+    this.dataPollingInterval = setInterval(() => {
+      if (this.currentRoute === '/main') {
+        this.recorridoService.getRecorridos()
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({ next: r => { this.recorridos = r; this.procesarDatosActualizados(); } });
+      }
+    }, 10000);
   }
 
   ngOnDestroy(): void {
+    this.trackingDestroy$.next();
+    this.trackingDestroy$.complete();
     this.destroy$.next();
     this.destroy$.complete();
-    if (this.mapInitTimeout) {
-      clearTimeout(this.mapInitTimeout);
-    }
+    if (this.mapInitTimeout) clearTimeout(this.mapInitTimeout);
+    if (this.dataPollingInterval) clearInterval(this.dataPollingInterval);
+    this.truckMarkers = {};
+    this.activeRoutesPolylines = {};
     this.destroyMap();
   }
 
@@ -100,71 +140,214 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   }
 
   private initPreviewMap(): void {
-    // Evitar múltiples inicializaciones simultáneas
-    if (this.mapInitInProgress) {
-      return;
-    }
-
-    // Si ya está inicializado, no reiniciar
-    if (this.mapInitialized && this.previewMap) {
-      return;
-    }
+    if (this.mapInitInProgress) return;
+    if (this.mapInitialized && this.previewMap) return;
 
     this.mapInitInProgress = true;
 
     try {
       const container = document.getElementById('mainMapPreview') as HTMLElement | null;
-      if (!container) {
-        this.mapInitInProgress = false;
-        return;
-      }
+      if (!container) { this.mapInitInProgress = false; return; }
 
-      // 1. Destruir mapa anterior si existe
       if (this.previewMap) {
-        try {
-          this.previewMap.off();
-          this.previewMap.remove();
-        } catch (e) {
-          // Ignorar errores
-        }
+        try { this.previewMap.off(); this.previewMap.remove(); } catch (e) {}
         this.previewMap = undefined;
       }
 
-      // 2. Limpiar referencias de Leaflet en el contenedor
       const leafletContainer = container as HTMLElement & { _leaflet_id?: number | null };
-      if (leafletContainer._leaflet_id !== undefined) {
-        leafletContainer._leaflet_id = null;
-      }
+      if (leafletContainer._leaflet_id !== undefined) leafletContainer._leaflet_id = null;
 
-      // 3. Crear nuevo mapa
-      this.previewMap = L.map(container, {
-        center: [3.8773, -77.0277],
-        zoom: 13,
-        maxZoom: 18
-      });
+      this.previewMap = L.map(container, { center: [3.8773, -77.0277], zoom: 13, maxZoom: 18 });
 
       this.layerNormal = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '© Google Maps'
+        maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '© Google Maps'
       });
-
       this.layerSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
-        maxZoom: 19
+        attribution: 'Tiles &copy; Esri', maxZoom: 19
       });
 
       this.layerNormal.addTo(this.previewMap);
       this.isSatelliteMode = false;
-
       this.mapInitialized = true;
+
+      this.truckMarkers = {};
+      this.activeRoutesPolylines = {};
+      this.procesarDatosActualizados();
+      this.escucharCamiones();
     } catch (e) {
-      // Ignorar errores en inicialización
       this.mapInitialized = false;
       this.previewMap = undefined;
     } finally {
       this.mapInitInProgress = false;
     }
+  }
+
+  // ===================================================
+  // Tracking en Tiempo Real
+  // ===================================================
+
+  private cargarDatosTracking(): void {
+    this.rutaService.getRutasProcesadas()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({ next: r => { this.rutas = r; this.procesarDatosActualizados(); }, error: () => {} });
+
+    this.recorridoService.getRecorridos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({ next: r => { this.recorridos = r; this.procesarDatosActualizados(); }, error: () => {} });
+
+    this.vehiculoService.getVehiculosList()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({ next: v => { this.vehiculos = v; this.procesarDatosActualizados(); }, error: () => {} });
+  }
+
+  private procesarDatosActualizados(): void {
+    if (!this.recorridos || !this.vehiculos || !this.rutas) return;
+
+    const recorridosActivos = this.recorridos.filter(r => r.activo);
+    this.activeTruckCount = recorridosActivos.length;
+
+    this.activeRecorridos = recorridosActivos.map(rec => {
+      const veh = this.vehiculos.find(v => String(v.id) === String(rec.vehiculo_id));
+      const ruta = this.rutas.find(r => String(r.id) === String(rec.ruta_id));
+      return {
+        rutaNombre: ruta?.nombre_ruta || rec.nombre_ruta || 'Ruta desconocida',
+        placa: veh?.placa || rec.vehiculo_placa || 'Sin placa',
+        conductor: rec.conductor_nombre
+          ? `${rec.conductor_nombre} ${rec.conductor_apellido || ''}`.trim()
+          : 'Conductor asignado'
+      };
+    });
+
+    this.redrawActiveRoutes();
+  }
+
+  private escucharCamiones(): void {
+    // Cancelar suscripción anterior (si el mapa fue re-creado)
+    this.trackingDestroy$.next();
+
+    this.liveTrackingService.activeTrucks$
+      .pipe(takeUntil(this.trackingDestroy$))
+      .subscribe(trucksMap => {
+        if (!this.previewMap) return;
+
+        // Eliminar camiones inactivos (que ya no envían GPS)
+        Object.keys(this.truckMarkers).forEach(id => {
+          if (!trucksMap.has(id)) {
+            this.previewMap!.removeLayer(this.truckMarkers[id]);
+            delete this.truckMarkers[id];
+          }
+        });
+
+        // Actualizar/Crear marcadores de camiones activos (con GPS)
+        trucksMap.forEach((data, conductorId) => {
+          const latlng = L.latLng(data.latitude, data.longitude);
+          let placa = '', nombreRuta = '';
+
+          if (data.recorrido_id) {
+            const rec = this.recorridos.find(r => String(r.id) === String(data.recorrido_id));
+            if (rec) {
+              const veh = this.vehiculos.find(v => String(v.id) === String(rec.vehiculo_id));
+              placa = veh ? veh.placa : '';
+              const ruta = this.rutas.find(r => String(r.id) === String(rec.ruta_id));
+              nombreRuta = ruta ? ruta.nombre_ruta : '';
+            }
+          }
+
+          if (!this.truckMarkers[conductorId]) {
+            const icon = L.divIcon({
+              html: this.makeTruckPinHtml(placa, nombreRuta),
+              className: 'truck-marker-wrapper', iconSize: [52, 52], iconAnchor: [26, 26]
+            });
+            this.truckMarkers[conductorId] = L.marker(latlng, { icon, zIndexOffset: 1000 }).addTo(this.previewMap!);
+          } else {
+            this.truckMarkers[conductorId].setLatLng(latlng);
+          }
+        });
+      });
+  }
+
+  private dibujarRutaActiva(recorridoId: string): void {
+    if (!this.recorridos.length || !this.rutas.length || !this.previewMap) return;
+    const rec = this.recorridos.find(r => String(r.id) === String(recorridoId));
+    if (!rec) return;
+    const rutaId = String(rec.ruta_id);
+    if (this.activeRoutesPolylines[rutaId]) return;
+    const ruta = this.rutas.find(r => String(r.id) === rutaId);
+    if (!ruta?.shape?.coordinates) return;
+    const coords = ruta.shape.coordinates.map((c: [number, number]) => L.latLng(c[1], c[0]));
+    const lg = L.layerGroup().addTo(this.previewMap);
+    // Glow + borde + línea principal
+    L.polyline(coords, { color: 'rgba(74,144,255,0.35)', weight: 18, lineCap: 'round' }).addTo(lg);
+    L.polyline(coords, { color: '#1a3a7a', weight: 10, opacity: 0.9, lineCap: 'round' }).addTo(lg);
+    L.polyline(coords, { color: '#4A90FF', weight: 6, opacity: 1, lineCap: 'round' }).addTo(lg);
+    // Punto de inicio (verde) y fin (rojo)
+    if (coords.length > 0) {
+      const startIcon = L.divIcon({
+        html: this.makeRoutePointHtml('start', true),
+        className: 'route-point-wrapper', iconSize: [28, 28], iconAnchor: [14, 14]
+      });
+      L.marker(coords[0], { icon: startIcon }).addTo(lg);
+      if (coords.length > 1) {
+        const endIcon = L.divIcon({
+          html: this.makeRoutePointHtml('end', true),
+          className: 'route-point-wrapper', iconSize: [28, 28], iconAnchor: [14, 14]
+        });
+        L.marker(coords[coords.length - 1], { icon: endIcon }).addTo(lg);
+      }
+    }
+    this.activeRoutesPolylines[rutaId] = lg;
+  }
+
+  private makeRoutePointHtml(type: 'start' | 'end', isActive: boolean): string {
+    const colors = {
+      start: { bg: '#22c55e', border: '#16a34a', icon: '▶' },
+      end:   { bg: '#ef4444', border: '#dc2626', icon: '■' }
+    };
+    const c = colors[type];
+    return `
+      <div style="width:28px;height:28px;background:${c.bg};border:3px solid ${c.border};border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 8px rgba(0,0,0,0.4),0 0 0 3px rgba(255,255,255,0.3);position:relative;">
+        <span style="color:white;font-size:10px;font-weight:900;line-height:1;">${c.icon}</span>
+      </div>
+      ${isActive ? `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+        width:28px;height:28px;border-radius:50%;background:${c.bg};opacity:0;
+        animation:pointPulse 2s ease-out infinite;pointer-events:none;"></div>` : ''}
+    `;
+  }
+
+  private redrawActiveRoutes(): void {
+    if (!this.rutas.length || !this.recorridos.length || !this.previewMap) return;
+    
+    const rutasActivas = new Set<string>();
+
+    this.recorridos.forEach(rec => {
+      if (rec.activo) {
+        rutasActivas.add(String(rec.ruta_id));
+        this.dibujarRutaActiva(String(rec.id));
+      }
+    });
+
+    // Limpiar rutas que ya no están activas en la BD
+    Object.keys(this.activeRoutesPolylines).forEach(rutaId => {
+      if (!rutasActivas.has(rutaId)) {
+        this.previewMap!.removeLayer(this.activeRoutesPolylines[rutaId]);
+        delete this.activeRoutesPolylines[rutaId];
+      }
+    });
+  }
+
+  private makeTruckPinHtml(placa?: string, rutaNombre?: string): string {
+    const tooltip = (placa || rutaNombre) ? `
+      <div style="position:absolute;bottom:55px;left:50%;transform:translateX(-50%);background:white;padding:6px 12px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.2);font-family:'Inter',sans-serif;white-space:nowrap;display:flex;flex-direction:column;align-items:center;border:1px solid rgba(0,0,0,0.05);">
+        ${rutaNombre ? `<span style="font-size:11px;font-weight:800;color:#4A90FF;text-transform:uppercase;">${rutaNombre}</span>` : ''}
+        ${placa ? `<span style="font-size:12px;font-weight:700;color:#1e293b;">&#x1F69B; ${placa}</span>` : ''}
+      </div>` : '';
+    return `${tooltip}
+      <div class="gps-pulse-ring"></div>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:linear-gradient(135deg,#4A90FF,#357ABD);border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(74,144,255,0.5);z-index:10;">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      </div>`;
   }
 
   toggleMapMode(): void {
@@ -213,6 +396,10 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   verRutaActiva() {
     // temporalmente deshabilitado
     // this.router.navigate(['/main', 'mapa']);
+  }
+
+  verReportes() {
+    // TODO: navegar a página de reportes cuando esté disponible
   }
 
   abrirMapa() {

@@ -19,7 +19,11 @@ export class Login {
   rememberMe: boolean = false;
   isHovered: boolean = false;
 
-  constructor(private router: Router, private authService: AuthService, private notificationService: NotificationService) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private notificationService: NotificationService
+  ) {}
 
   handleSubmit(): void {
     if (!this.email || !this.password) {
@@ -30,21 +34,22 @@ export class Login {
     this.authService.login(this.email, this.password).subscribe({
       next: res => {
         if (res.ok) {
-          // Validar que el usuario sea administrador (rol 1)
+          // Solo administradores (rol 1) pueden acceder al panel web
           if (res.usuario.id_rol !== 1) {
             this.notificationService.error('Acceso denegado. Solo administradores pueden ingresar.');
             return;
           }
 
-          this.authService.guardarToken(res.token);
+          // rememberMe: si está marcado persiste en localStorage, si no en sessionStorage
+          this.authService.guardarToken(res.token, this.rememberMe);
           this.authService.guardarUsuario(res.usuario);
           this.router.navigate(['/main']);
         } else {
           this.notificationService.error('Credenciales inválidas');
         }
       },
-      error: err => {
-        this.notificationService.error('Error al iniciar sesión');
+      error: () => {
+        this.notificationService.error('Error al iniciar sesión. Verifica tus credenciales.');
       }
     });
   }
@@ -57,11 +62,6 @@ export class Login {
     if (event.key === 'Enter') this.handleSubmit();
   }
 
-  onMouseEnter(): void {
-    this.isHovered = true;
-  }
-
-  onMouseLeave(): void {
-    this.isHovered = false;
-  }
+  onMouseEnter(): void { this.isHovered = true; }
+  onMouseLeave(): void { this.isHovered = false; }
 }

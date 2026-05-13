@@ -10,10 +10,7 @@ import { RutaService } from '../../services/ruta/ruta.service';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { NotificationContainerComponent } from '../../components/notification-container/notification-container.component';
-import { RutaProcesada, RutaShape, CrearRutaPayload, Usuario, Recorrido, Vehiculo } from '../../models';
-import { LiveTrackingService } from '../../services/live-tracking.service';
-import { RecorridoService } from '../../services/recorrido/recorrido.service';
-import { VehiculoService } from '../../services/vehiculo/vehiculo.service';
+import { RutaProcesada, RutaShape, CrearRutaPayload, Usuario } from '../../models';
 
 @Component({
   selector: 'app-mapa',
@@ -37,12 +34,7 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
   polyline: L.Polyline | null = null;
   marcadores: L.Marker[] = [];
   
-  // Real-time tracking
-  private truckMarkers: { [conductorId: string]: L.Marker } = {};
-  private activeRoutesPolylines: { [rutaId: string]: L.LayerGroup } = {};
-  
-  recorridos: Recorrido[] = [];
-  vehiculos: Vehiculo[] = [];
+
 
   // rutas cargadas
   rutas: RutaProcesada[] = [];
@@ -58,10 +50,7 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
     public router: Router,
     private route: ActivatedRoute,
     private auth: AuthService,
-    private notificationService: NotificationService,
-    private liveTrackingService: LiveTrackingService,
-    private recorridoService: RecorridoService,
-    private vehiculoService: VehiculoService
+    private notificationService: NotificationService
   ) {}
 
   // ===================================================
@@ -73,26 +62,17 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
     if (this.usuario) {
       this.esAdmin = this.usuario.id_rol === 1;
     }
-
     this.cargarRutas();
-    this.cargarRecorridos();
-    this.cargarVehiculos();
-    this.liveTrackingService.iniciarMonitoreo();
   }
 
   ngAfterViewInit(): void {
     this.initMap();
     setTimeout(() => this.map.invalidateSize(), 200);
-    this.escucharCamiones();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    // No detenemos el monitoreo global para no perder la memoria de camiones activos,
-    // pero sí debemos limpiar las referencias a los objetos del mapa local destruido.
-    this.truckMarkers = {};
-    this.activeRoutesPolylines = {};
     if (this.map) this.map.remove();
   }
 
@@ -247,139 +227,9 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
   // Tracking en Tiempo Real
   // ===================================================
 
-  private escucharCamiones(): void {
-    this.liveTrackingService.activeTrucks$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((trucksMap) => {
-        if (!this.map) return;
 
-        // 1. Eliminar camiones que ya no están activos
-        Object.keys(this.truckMarkers).forEach(conductorId => {
-          if (!trucksMap.has(conductorId)) {
-            this.map.removeLayer(this.truckMarkers[conductorId]);
-            delete this.truckMarkers[conductorId];
-          }
-        });
 
-        // 2. Determinar rutas necesarias y eliminar las sobrantes
-        const rutasActivasActuales = new Set<string>();
 
-        trucksMap.forEach((data, conductorId) => {
-          const latlng = L.latLng(data.latitude, data.longitude);
-          
-          // Buscar info extra
-          let placa = '';
-          let nombreRuta = '';
-          if (data.recorrido_id) {
-            const recorrido = this.recorridos.find(r => String(r.id) === String(data.recorrido_id));
-            if (recorrido) {
-               const vehiculo = this.vehiculos.find(v => String(v.id) === String(recorrido.vehiculo_id));
-               placa = vehiculo ? vehiculo.placa : ((recorrido as any).vehiculo_placa || '');
-               
-               const ruta = this.rutas.find(r => String(r.id) === String(recorrido.ruta_id));
-               nombreRuta = ruta ? ruta.nombre_ruta : ((recorrido as any).nombre_ruta || '');
-            }
-          }
-
-          if (!this.truckMarkers[conductorId]) {
-            // Crear nuevo camión
-            const truckIcon = L.divIcon({
-              html: this.makeTruckPinHtml(placa, nombreRuta),
-              className: 'truck-marker-wrapper',
-              iconSize: [52, 52],
-              iconAnchor: [26, 26]
-            });
-            const marker = L.marker(latlng, { icon: truckIcon, zIndexOffset: 1000 }).addTo(this.map);
-            this.truckMarkers[conductorId] = marker;
-          } else {
-            // Actualizar posición del camión existente
-            this.truckMarkers[conductorId].setLatLng(latlng);
-          }
-          
-          // Dibujar la ruta asignada si no está dibujada
-          if (data.recorrido_id) {
-            const recorrido = this.recorridos.find(r => String(r.id) === String(data.recorrido_id));
-            if (recorrido) {
-              rutasActivasActuales.add(String(recorrido.ruta_id));
-              this.dibujarRutaActiva(data.recorrido_id);
-            }
-          }
-        });
-
-        // 3. Limpiar rutas que ya ningún camión está recorriendo
-        Object.keys(this.activeRoutesPolylines).forEach(rutaId => {
-          if (!rutasActivasActuales.has(rutaId)) {
-            this.map.removeLayer(this.activeRoutesPolylines[rutaId]);
-            delete this.activeRoutesPolylines[rutaId];
-          }
-        });
-      });
-  }
-
-  private dibujarRutaActiva(recorridoId: string): void {
-    if (!this.recorridos.length || !this.rutas.length || !this.map) return;
-
-    const recorrido = this.recorridos.find(r => String(r.id) === String(recorridoId));
-    if (!recorrido) return;
-
-    const rutaId = String(recorrido.ruta_id);
-    
-    // Si la ruta ya está dibujada (en activeRoutesPolylines), no hacer nada
-    if (this.activeRoutesPolylines[rutaId]) return;
-
-    const ruta = this.rutas.find(r => String(r.id) === rutaId);
-    if (!ruta || !ruta.shape?.coordinates) return;
-
-    const coords = ruta.shape.coordinates.map(
-      (c: [number, number]) => L.latLng(c[1], c[0])
-    );
-
-    const layerGroup = L.layerGroup().addTo(this.map);
-
-    // ═══ ESTILO PREMIUM ═══
-    const mainColor = '#4A90FF';
-    const borderColor = '#1a3a7a';
-    const glowColor = 'rgba(74, 144, 255, 0.35)';
-
-    // Capa 1: Resplandor (glow)
-    L.polyline(coords, {
-      color: glowColor,
-      weight: 18,
-      opacity: 1,
-      lineCap: 'round',
-      lineJoin: 'round'
-    }).addTo(layerGroup);
-
-    // Capa 2: Borde oscuro
-    L.polyline(coords, {
-      color: borderColor,
-      weight: 10,
-      opacity: 0.9,
-      lineCap: 'round',
-      lineJoin: 'round'
-    }).addTo(layerGroup);
-
-    // Capa 3: Línea principal
-    L.polyline(coords, {
-      color: mainColor,
-      weight: 6,
-      opacity: 1,
-      lineCap: 'round',
-      lineJoin: 'round'
-    }).addTo(layerGroup);
-
-    if (coords.length > 0) {
-      const startIcon = L.divIcon({ html: this.makeRoutePointHtml('start', true), className: 'route-point-wrapper', iconSize: [28, 28], iconAnchor: [14, 14] });
-      L.marker(coords[0], { icon: startIcon }).addTo(layerGroup);
-      
-      if (coords.length > 1) {
-        const endIcon = L.divIcon({ html: this.makeRoutePointHtml('end', true), className: 'route-point-wrapper', iconSize: [28, 28], iconAnchor: [14, 14] });
-        L.marker(coords[coords.length - 1], { icon: endIcon }).addTo(layerGroup);
-      }
-    }
-
-    this.activeRoutesPolylines[rutaId] = layerGroup;
-  }
 
   // ===================================================
   // Cargar rutas desde API
@@ -389,53 +239,9 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
     this.rutaService.getRutasProcesadas()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (rutas: RutaProcesada[]) => {
-          this.rutas = rutas;
-          this.redrawActiveTruckRoutes();
-        },
+        next: (rutas: RutaProcesada[]) => { this.rutas = rutas; },
         error: () => {}
       });
-  }
-
-  private cargarRecorridos(): void {
-    this.recorridoService.getRecorridos()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (recorridos) => {
-          this.recorridos = recorridos;
-          this.redrawActiveTruckRoutes();
-        },
-        error: () => {}
-      });
-  }
-
-  private cargarVehiculos(): void {
-    this.vehiculoService.getVehiculosList()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (vehiculos) => {
-          this.vehiculos = vehiculos;
-        },
-        error: () => {}
-      });
-  }
-
-  // Se llama cuando rutas o recorridos terminan de cargar, para repintar las rutas de los camiones activos
-  // que pudieron haber sido omitidas porque los datos no estaban listos
-  private redrawActiveTruckRoutes(): void {
-    // Si todavía no tenemos ambos, no hacemos nada
-    if (!this.rutas.length || !this.recorridos.length) return;
-    
-    // Obtener los camiones activos actuales del servicio
-    // y forzar el dibujado de sus rutas
-    const activeMap = (this.liveTrackingService as any).activeTrucksSubj?.value;
-    if (activeMap) {
-      activeMap.forEach((data: any) => {
-        if (data.recorrido_id) {
-          this.dibujarRutaActiva(data.recorrido_id);
-        }
-      });
-    }
   }
 
   // ===================================================
@@ -580,8 +386,17 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
           // Recargar desde el servidor (para actualizaciones de otros usuarios)
           setTimeout(() => this.cargarRutas(), 1000);
         },
-        error: () => {
-          this.notificationService.error("Error al guardar la ruta");
+        error: (err) => {
+          const mensaje = err?.error?.mensaje;
+          if (err?.status === 409 && mensaje) {
+            // Nombre duplicado: mostrar el mensaje del backend y cancelar creación
+            this.notificationService.error(mensaje);
+            this.creandoRuta = false;
+            this.nombreRuta = '';
+            this.limpiarMapa();
+          } else {
+            this.notificationService.error("Error al guardar la ruta. Inténtalo de nuevo.");
+          }
         }
       });
   }
@@ -673,9 +488,5 @@ export class MapaComponent implements AfterViewInit, OnDestroy, OnInit {
 
     this.marcadores.forEach(m => this.map.removeLayer(m));
     this.marcadores = [];
-    
-    // Limpiar rutas de tracking activo (si el usuario limpia el mapa manualmente)
-    Object.values(this.activeRoutesPolylines).forEach(lg => this.map.removeLayer(lg));
-    this.activeRoutesPolylines = {};
   }
 }

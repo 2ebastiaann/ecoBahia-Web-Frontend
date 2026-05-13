@@ -21,20 +21,33 @@ export class AuthService {
     return this.http.post<RegisterResponse>(`${this.apiUrl}/register`, { email, password, id_rol });
   }
 
-  guardarToken(token: string): void {
-    sessionStorage.setItem('token', token);
+  /**
+   * Guarda el token de sesión.
+   * Si rememberMe=true → localStorage (persiste al cerrar el navegador).
+   * Si rememberMe=false → sessionStorage (se borra al cerrar la pestaña).
+   */
+  guardarToken(token: string, rememberMe: boolean = false): void {
+    if (rememberMe) {
+      localStorage.setItem('token', token);
+      sessionStorage.removeItem('token');
+    } else {
+      sessionStorage.setItem('token', token);
+      localStorage.removeItem('token');
+    }
   }
 
   guardarUsuario(usuario: Usuario): void {
-    sessionStorage.setItem('usuario', JSON.stringify(usuario));
+    const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+    storage.setItem('usuario', JSON.stringify(usuario));
   }
 
+  /** Busca el token en sessionStorage primero, luego en localStorage (rememberMe) */
   obtenerToken(): string | null {
-    return sessionStorage.getItem('token');
+    return sessionStorage.getItem('token') || localStorage.getItem('token');
   }
 
   obtenerUsuario(): Usuario | null {
-    const raw = sessionStorage.getItem('usuario');
+    const raw = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
     if (!raw) return null;
     return JSON.parse(raw) as Usuario;
   }
@@ -46,5 +59,7 @@ export class AuthService {
   logout(): void {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('usuario');
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
   }
 }
