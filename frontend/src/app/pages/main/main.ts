@@ -11,7 +11,9 @@ import { LiveTrackingService } from '../../services/live-tracking.service';
 import { RecorridoService } from '../../services/recorrido/recorrido.service';
 import { VehiculoService } from '../../services/vehiculo/vehiculo.service';
 import { RutaService } from '../../services/ruta/ruta.service';
-import { Recorrido, Vehiculo, RutaProcesada } from '../../models';
+import { ReporteService } from '../../services/reporte/reporte.service';
+import { WebSocketService } from '../../services/websocket.service';
+import { Recorrido, Vehiculo, RutaProcesada, Reporte } from '../../models';
 
 @Component({
   selector: 'app-main',
@@ -47,7 +49,8 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   public activeRecorridos: { rutaNombre: string; placa: string; conductor: string }[] = [];
 
   // Reportes
-  public reportes: { tipo: 'ciudadano' | 'conductor'; mensaje: string; fecha: Date }[] = [];
+  public reportes: Reporte[] = [];
+  public selectedReporte: Reporte | null = null;
 
   private readonly destroy$ = new Subject<void>();
   /** Subject separado para la suscripción de tracking — se reinicia al re-crear el mapa */
@@ -66,7 +69,9 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     private liveTrackingService: LiveTrackingService,
     private recorridoService: RecorridoService,
     private vehiculoService: VehiculoService,
-    private rutaService: RutaService
+    private rutaService: RutaService,
+    private reporteService: ReporteService,
+    private webSocketService: WebSocketService
   ) {
     this.currentRoute = this.router.url;
 
@@ -100,12 +105,23 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     this.liveTrackingService.iniciarMonitoreo();
     this.cargarDatosTracking();
     
+    // Escuchar reportes en tiempo real
+    this.webSocketService.nuevoReporte$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((nuevoReporte: Reporte) => {
+        if (this.currentRoute === '/main') {
+          // Agregar al inicio del arreglo para que aparezca primero
+          this.reportes.unshift(nuevoReporte);
+        }
+      });
+    
     // Polling cada 10 segundos para saber si algún recorrido finalizó o empezó
     this.dataPollingInterval = setInterval(() => {
       if (this.currentRoute === '/main') {
         this.recorridoService.getRecorridos()
           .pipe(takeUntil(this.destroy$))
           .subscribe({ next: r => { this.recorridos = r; this.procesarDatosActualizados(); } });
+        this.cargarReportes();
       }
     }, 10000);
   }
@@ -198,6 +214,17 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     this.vehiculoService.getVehiculosList()
       .pipe(takeUntil(this.destroy$))
       .subscribe({ next: v => { this.vehiculos = v; this.procesarDatosActualizados(); }, error: () => {} });
+
+    this.cargarReportes();
+  }
+
+  private cargarReportes(): void {
+    this.reporteService.getReportes()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: r => this.reportes = r,
+        error: () => {}
+      });
   }
 
   private procesarDatosActualizados(): void {
@@ -400,6 +427,14 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
   verReportes() {
     // TODO: navegar a página de reportes cuando esté disponible
+  }
+
+  abrirReporte(reporte: Reporte): void {
+    this.selectedReporte = reporte;
+  }
+
+  cerrarReporte(): void {
+    this.selectedReporte = null;
   }
 
   abrirMapa() {

@@ -66,17 +66,20 @@
               <div class="info-card-body">
                 <p class="info-placeholder" *ngIf="reportes.length === 0">Sin reportes recientes</p>
                 <ul class="reporte-list" *ngIf="reportes.length > 0">
-                  <li class="reporte-item" *ngFor="let r of reportes | slice:0:4">
-                    <span class="reporte-tipo" [class.ciudadano]="r.tipo === 'ciudadano'" [class.conductor]="r.tipo === 'conductor'">
-                      {{ r.tipo === 'ciudadano' ? '👤' : '🚛' }}
+                  <li class="reporte-item clickable" *ngFor="let r of reportes | slice:0:4" (click)="abrirReporte(r)">
+                    <span class="reporte-tipo" [class.ciudadano]="!r.usuario_id" [class.conductor]="!!r.usuario_id">
+                      {{ r.usuario_id ? '🚛' : '👤' }}
                     </span>
-                    <span class="reporte-msg">{{ r.mensaje }}</span>
-                    <span class="reporte-fecha">{{ r.fecha | date:'HH:mm' }}</span>
+                    <span class="reporte-msg">
+                      <strong>{{ r.nombre }}</strong><br>
+                      <small>{{ r.reporte | slice:0:80 }}{{ r.reporte.length > 80 ? '...' : '' }}</small>
+                    </span>
+                    <span class="reporte-fecha">{{ r.creado_en | date:'dd/MM HH:mm' }}</span>
                   </li>
                 </ul>
               </div>
               <div class="info-card-footer">
-                <button class="link-btn" (click)="verReportes()">Ver todos...</button>
+                <span class="link-btn">{{ reportes.length }} reporte{{ reportes.length !== 1 ? 's' : '' }} registrado{{ reportes.length !== 1 ? 's' : '' }}</span>
               </div>
             </div>
 
@@ -100,5 +103,53 @@
     </div>
 
   </main>
+
+  <!-- Modal Detalle Reporte -->
+  <div class="reporte-modal-overlay" *ngIf="selectedReporte" (click)="cerrarReporte()">
+    <div class="reporte-modal" (click)="$event.stopPropagation()">
+
+      <div class="reporte-modal-header">
+        <h2>📋 Detalle del Reporte</h2>
+        <button class="modal-close" (click)="cerrarReporte()">✕</button>
+      </div>
+
+      <div class="reporte-modal-body">
+
+        <div class="detail-row">
+          <span class="detail-label">Reportante</span>
+          <span class="detail-value">{{ selectedReporte.nombre }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Correo</span>
+          <span class="detail-value">{{ selectedReporte.email }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Tipo</span>
+          <span class="detail-badge" [class.badge-conductor]="!!selectedReporte.usuario_id" [class.badge-ciudadano]="!selectedReporte.usuario_id">
+            {{ selectedReporte.usuario_id ? '🚛 Conductor' : '👤 Ciudadano' }}
+          </span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Fecha</span>
+          <span class="detail-value">{{ selectedReporte.creado_en | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+
+        <div class="detail-section">
+          <span class="detail-label">Descripción</span>
+          <p class="detail-text">{{ selectedReporte.reporte }}</p>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedReporte.imagen_base64">
+          <span class="detail-label">Imagen adjunta</span>
+          <img class="detail-image" [src]="selectedReporte.imagen_base64" alt="Imagen del reporte">
+        </div>
+
+      </div>
+
+    </div>
+  </div>
 
 </div>

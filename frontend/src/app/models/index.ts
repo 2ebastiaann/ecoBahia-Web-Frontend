@@ -7,3 +7,4 @@ export * from './conductor.model';
 export * from './ruta.model';
 export * from './recorrido.model';
 export * from './usuario.model';
+export * from './reporte.model';

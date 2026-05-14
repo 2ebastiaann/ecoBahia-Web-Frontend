@@ -5,8 +5,8 @@ import { environment } from '../../../environments/environment';
 import { Recorrido, CrearRecorridoPayload } from '../../models';
 
 // =========================================================
-// Servicio de dominio: Recorridos (Planificación local)
-// Solo maneja /recorridos_locales — no lógica de UI
+// Servicio de dominio: Recorridos
+// Maneja /recorridos — sin lógica de UI
 // =========================================================
 
 @Injectable({
@@ -14,7 +14,7 @@ import { Recorrido, CrearRecorridoPayload } from '../../models';
 })
 export class RecorridoService {
 
-  private readonly baseUrl = `${environment.API_BASE_URL}/recorridos_locales`;
+  private readonly baseUrl = `${environment.API_BASE_URL}/recorridos`;
 
   constructor(private http: HttpClient) {}
 
@@ -25,11 +25,11 @@ export class RecorridoService {
 
   /** Crea un nuevo recorrido */
   crearRecorrido(body: CrearRecorridoPayload): Observable<Recorrido> {
-    return this.http.post<Recorrido>(this.baseUrl, body);
+    return this.http.post<Recorrido>(`${this.baseUrl}/iniciar`, body);
   }
 
-  /** Desactiva (finaliza) un recorrido activo */
-  desactivarRecorrido(id: string): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/${id}/desactivar`, {});
+  /** Finaliza un recorrido activo */
+  finalizarRecorrido(id: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/finalizar`, {});
   }
 }

@@ -151,7 +151,7 @@ export class AsignacionesComponent implements OnInit, OnDestroy {
     this.showConfirmDialog = false;
     if (!this.recorridoToDeactivate) return;
 
-    this.recorridoService.desactivarRecorrido(this.recorridoToDeactivate.id)
+    this.recorridoService.finalizarRecorrido(this.recorridoToDeactivate.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {

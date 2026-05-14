@@ -24,6 +24,9 @@ export class WebSocketService {
   private conductorDisconnectedSubj = new Subject<string>();
   readonly conductorDisconnected$ = this.conductorDisconnectedSubj.asObservable();
 
+  private nuevoReporteSubj = new Subject<any>();
+  readonly nuevoReporte$ = this.nuevoReporteSubj.asObservable();
+
   constructor(private authService: AuthService) {}
 
   connect(): void {
@@ -48,6 +51,11 @@ export class WebSocketService {
     // Escuchar cuando un conductor finaliza recorrido (se desconecta)
     this.socket.on('conductor:disconnected', (data: { conductor_id: string }) => {
       this.conductorDisconnectedSubj.next(data.conductor_id);
+    });
+
+    // Escuchar nuevos reportes
+    this.socket.on('nuevo_reporte', (reporte: any) => {
+      this.nuevoReporteSubj.next(reporte);
     });
 
     this.socket.on('connect_error', (err) => console.error('❌ Error Socket.IO:', err.message));
