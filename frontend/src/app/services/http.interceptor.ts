@@ -13,8 +13,8 @@ import { catchError } from 'rxjs/operators';
 export class AuthHttpInterceptor implements HttpInterceptor {
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Inyectar token de autenticación si existe
-    const token = sessionStorage.getItem('token');
+    // Inyectar token de autenticación si existe (desde session o local storage)
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     let authReq = request;
 
     if (token) {
