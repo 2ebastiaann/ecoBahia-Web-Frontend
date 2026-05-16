@@ -12,6 +12,14 @@ export interface TrackingData {
   timestamp: string;
 }
 
+export interface FotoData {
+  posicion_id: string;
+  recorrido_id: string;
+  lat: number;
+  lon: number;
+  capturado_ts: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -26,6 +34,9 @@ export class WebSocketService {
 
   private nuevoReporteSubj = new Subject<any>();
   readonly nuevoReporte$ = this.nuevoReporteSubj.asObservable();
+
+  private nuevaFotoSubj = new Subject<FotoData>();
+  readonly nuevaFoto$ = this.nuevaFotoSubj.asObservable();
 
   constructor(private authService: AuthService) {}
 
@@ -56,6 +67,11 @@ export class WebSocketService {
     // Escuchar nuevos reportes
     this.socket.on('nuevo_reporte', (reporte: any) => {
       this.nuevoReporteSubj.next(reporte);
+    });
+
+    // Escuchar fotos tomadas por conductores en tiempo real
+    this.socket.on('location:photo', (data: FotoData) => {
+      this.nuevaFotoSubj.next(data);
     });
 
     this.socket.on('connect_error', (err) => console.error('❌ Error Socket.IO:', err.message));

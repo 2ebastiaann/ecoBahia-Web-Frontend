@@ -352,6 +352,30 @@ $border-green: rgba(16, 185, 129, 0.2);
   overflow: hidden;
 }
 
+.foto-modal {
+  background: #0f172a;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  animation: modalSlideUp 0.25s ease-out;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  .reporte-modal-header {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    h2 { color: #f1f5f9; }
+    .modal-close {
+      background: rgba(255,255,255,0.1);
+      color: #f1f5f9;
+      &:hover { background: rgba(255,255,255,0.2); }
+    }
+  }
+}
+
 .reporte-modal-header {
   display: flex;
   align-items: center;

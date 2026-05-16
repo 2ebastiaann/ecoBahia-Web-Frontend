@@ -12,8 +12,9 @@ import { RecorridoService } from '../../services/recorrido/recorrido.service';
 import { VehiculoService } from '../../services/vehiculo/vehiculo.service';
 import { RutaService } from '../../services/ruta/ruta.service';
 import { ReporteService } from '../../services/reporte/reporte.service';
-import { WebSocketService } from '../../services/websocket.service';
+import { WebSocketService, FotoData } from '../../services/websocket.service';
 import { Recorrido, Vehiculo, RutaProcesada, Reporte } from '../../models';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-main',
@@ -42,11 +43,15 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   // Tracking en tiempo real
   private truckMarkers: { [conductorId: string]: L.Marker } = {};
   private activeRoutesPolylines: { [rutaId: string]: L.LayerGroup } = {};
+  private photoMarkers: { [posicionId: string]: L.Marker } = {};
   private rutas: RutaProcesada[] = [];
   private recorridos: Recorrido[] = [];
   private vehiculos: Vehiculo[] = [];
   public activeTruckCount = 0;
-  public activeRecorridos: { rutaNombre: string; placa: string; conductor: string }[] = [];
+  public activeRecorridos: { recorridoId: string | number; rutaNombre: string; placa: string; conductor: string }[] = [];
+
+  // Modal foto
+  public fotoModalUrl: string | null = null;
 
   // Reportes
   public reportes: Reporte[] = [];
@@ -110,8 +115,16 @@ export class MainComponent implements AfterViewInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((nuevoReporte: Reporte) => {
         if (this.currentRoute === '/main') {
-          // Agregar al inicio del arreglo para que aparezca primero
           this.reportes.unshift(nuevoReporte);
+        }
+      });
+
+    // Escuchar fotos en tiempo real (conductor toma foto → aparece en el mapa)
+    this.webSocketService.nuevaFoto$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((foto: FotoData) => {
+        if (this.currentRoute === '/main' && this.previewMap) {
+          this.agregarMarcadorFoto(foto.posicion_id, foto.lat, foto.lon, foto.capturado_ts);
         }
       });
     
@@ -135,6 +148,7 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     if (this.dataPollingInterval) clearInterval(this.dataPollingInterval);
     this.truckMarkers = {};
     this.activeRoutesPolylines = {};
+    this.photoMarkers = {};
     this.destroyMap();
   }
 
@@ -233,10 +247,14 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     const recorridosActivos = this.recorridos.filter(r => r.activo);
     this.activeTruckCount = recorridosActivos.length;
 
+    const anteriorIds = new Set(this.activeRecorridos.map(r => String(r.recorridoId)));
+    const nuevoIds = new Set(recorridosActivos.map(r => String(r.id)));
+
     this.activeRecorridos = recorridosActivos.map(rec => {
       const veh = this.vehiculos.find(v => String(v.id) === String(rec.vehiculo_id));
       const ruta = this.rutas.find(r => String(r.id) === String(rec.ruta_id));
       return {
+        recorridoId: rec.id,
         rutaNombre: ruta?.nombre_ruta || rec.nombre_ruta || 'Ruta desconocida',
         placa: veh?.placa || rec.vehiculo_placa || 'Sin placa',
         conductor: rec.conductor_nombre
@@ -244,6 +262,25 @@ export class MainComponent implements AfterViewInit, OnDestroy {
           : 'Conductor asignado'
       };
     });
+
+    // Cargar fotos de recorridos que acaban de activarse
+    recorridosActivos.forEach(rec => {
+      if (!anteriorIds.has(String(rec.id))) {
+        this.cargarFotosRecorrido(String(rec.id));
+      }
+    });
+
+    // Eliminar marcadores de foto de recorridos que ya terminaron
+    if (this.previewMap) {
+      Object.keys(this.photoMarkers).forEach(pid => {
+        // Si no hay ningún recorrido activo que tenga esta posición, quitar el marcador
+        // (se hace por deducción: si cambiaron los ids activos, limpiar todo y recargar)
+        if (!nuevoIds.size && anteriorIds.size) {
+          this.previewMap!.removeLayer(this.photoMarkers[pid]);
+          delete this.photoMarkers[pid];
+        }
+      });
+    }
 
     this.redrawActiveRoutes();
   }
@@ -291,6 +328,89 @@ export class MainComponent implements AfterViewInit, OnDestroy {
           }
         });
       });
+  }
+
+  // ===================================================
+  // Fotos de posiciones
+  // ===================================================
+
+  private cargarFotosRecorrido(recorridoId: string): void {
+    this.recorridoService.obtenerFotosRecorrido(recorridoId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          const fotos = res?.data || res || [];
+          fotos.forEach((f: any) => {
+            this.agregarMarcadorFoto(f.id, f.lat, f.lon, f.capturado_ts);
+          });
+        },
+        error: () => {}
+      });
+  }
+
+  agregarMarcadorFoto(posicionId: string, lat: number, lon: number, timestamp: string): void {
+    if (!this.previewMap || this.photoMarkers[posicionId]) return;
+
+    const icon = L.divIcon({
+      html: this.makePhotoPinHtml(timestamp),
+      className: 'photo-marker-wrapper',
+      iconSize: [36, 36],
+      iconAnchor: [18, 36]
+    });
+
+    const marker = L.marker([lat, lon], { icon, zIndexOffset: 900 }).addTo(this.previewMap);
+
+    // Al hacer click, pedir la imagen al backend y mostrar modal
+    const token = sessionStorage.getItem('token');
+    marker.on('click', () => {
+      fetch(`${environment.API_BASE_URL}/recorridos/posiciones/${posicionId}/imagen`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(r => r.blob())
+      .then(blob => {
+        this.fotoModalUrl = URL.createObjectURL(blob);
+      })
+      .catch(() => {
+        this.fotoModalUrl = null;
+      });
+    });
+
+    this.photoMarkers[posicionId] = marker;
+  }
+
+  cerrarFotoModal(): void {
+    if (this.fotoModalUrl) {
+      URL.revokeObjectURL(this.fotoModalUrl);
+      this.fotoModalUrl = null;
+    }
+  }
+
+  private makePhotoPinHtml(timestamp: string): string {
+    const hora = new Date(timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    return `
+      <div style="
+        position: relative; width: 36px; height: 36px; cursor: pointer;
+        filter: drop-shadow(0 3px 8px rgba(0,0,0,0.4));
+      ">
+        <div style="
+          width: 36px; height: 36px;
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          border: 3px solid white;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 8px rgba(245,158,11,0.6);
+        ">
+          <span style="transform: rotate(45deg); font-size: 16px; line-height: 1;">📷</span>
+        </div>
+        <div style="
+          position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+          background: rgba(0,0,0,0.7); color: white;
+          font-size: 9px; font-weight: 700; white-space: nowrap;
+          padding: 2px 5px; border-radius: 4px;
+          font-family: 'Inter', sans-serif;
+        ">${hora}</div>
+      </div>`;
   }
 
   private dibujarRutaActiva(recorridoId: string): void {
@@ -439,6 +559,19 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
   abrirMapa() {
     this.router.navigate(['/main', 'mapa'], { queryParams: { create: '1' } });
+  }
+
+  getPorcentaje(recorridoId: string | number): number {
+    const activeMap = (this.liveTrackingService as any).activeTrucksSubj?.value;
+    if (!activeMap) return 0;
+    
+    // Buscar en el map el camión con ese recorrido_id
+    for (const [conductorId, data] of activeMap.entries()) {
+      if (String(data.recorrido_id) === String(recorridoId)) {
+        return data.porcentaje_progreso || 0;
+      }
+    }
+    return 0;
   }
 
   onLogout() {

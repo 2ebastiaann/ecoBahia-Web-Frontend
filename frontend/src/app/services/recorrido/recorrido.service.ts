@@ -32,4 +32,9 @@ export class RecorridoService {
   finalizarRecorrido(id: string): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/${id}/finalizar`, {});
   }
+
+  /** Obtiene las posiciones que contienen fotos para un recorrido */
+  obtenerFotosRecorrido(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/${id}/fotos`);
+  }
 }

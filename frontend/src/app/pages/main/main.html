@@ -43,12 +43,21 @@
                   Sin recorridos activos en este momento
                 </p>
                 <ul class="reporte-list" *ngIf="activeRecorridos.length > 0">
-                  <li class="reporte-item" *ngFor="let r of activeRecorridos">
-                    <span class="reporte-tipo conductor">🚛</span>
-                    <span class="reporte-msg">
-                      <strong>{{ r.rutaNombre }}</strong><br>
-                      <small>{{ r.placa }} · {{ r.conductor }}</small>
-                    </span>
+                  <li class="reporte-item" *ngFor="let r of activeRecorridos" style="flex-direction: column; align-items: stretch; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                      <span class="reporte-tipo conductor">🚛</span>
+                      <span class="reporte-msg" style="flex: 1;">
+                        <strong>{{ r.rutaNombre }}</strong><br>
+                        <small>{{ r.placa }} · {{ r.conductor }}</small>
+                      </span>
+                      <span style="font-weight: 800; font-size: 0.9rem; color: #10b981;">
+                        {{ getPorcentaje(r.recorridoId) }}%
+                      </span>
+                    </div>
+                    <!-- Barra de progreso -->
+                    <div style="width: 100%; height: 6px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                      <div [style.width.%]="getPorcentaje(r.recorridoId)" style="height: 100%; background: linear-gradient(90deg, #34d399, #10b981); border-radius: 4px; transition: width 1s ease-out;"></div>
+                    </div>
                   </li>
                 </ul>
               </div>
@@ -103,6 +112,20 @@
     </div>
 
   </main>
+
+  <!-- Modal Foto de Posición -->
+  <div class="reporte-modal-overlay" *ngIf="fotoModalUrl" (click)="cerrarFotoModal()">
+    <div class="foto-modal" (click)="$event.stopPropagation()">
+      <div class="reporte-modal-header">
+        <h2>📷 Foto del Conductor</h2>
+        <button class="modal-close" (click)="cerrarFotoModal()">✕</button>
+      </div>
+      <div style="padding: 12px;">
+        <img [src]="fotoModalUrl" alt="Foto tomada por el conductor"
+          style="width: 100%; border-radius: 12px; display: block; max-height: 70vh; object-fit: contain; background: #0f172a;">
+      </div>
+    </div>
+  </div>
 
   <!-- Modal Detalle Reporte -->
   <div class="reporte-modal-overlay" *ngIf="selectedReporte" (click)="cerrarReporte()">
